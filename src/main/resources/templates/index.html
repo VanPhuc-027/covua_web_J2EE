@@ -1,13 +1,22 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Chess Game</title>
+    <title>Game Cờ Vua Spring Boot</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <h1>Hello Group 18</h1>
+<h1>Chess Game</h1>
+
+<div class="chessboard">
+    <div th:each="row : ${#numbers.sequence(0, 7)}" class="row">
+
+        <div th:each="col : ${#numbers.sequence(0, 7)}"
+             th:classappend="${(row + col) % 2 == 0 ? 'light' : 'dark'}"
+             class="square">
+        </div>
+
+    </div>
+</div>
 </body>
 </html>
