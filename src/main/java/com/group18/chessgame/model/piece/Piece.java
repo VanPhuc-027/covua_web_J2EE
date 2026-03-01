@@ -15,7 +15,7 @@ public abstract class Piece {
     public Piece(PieceColor color, String name) {
         this.color = color;
         this.name = name;
-        this.iconPath = "/icons/" + color.toString().toLowerCase() + "_" + name.toLowerCase() + ".png";
+        this.iconPath = "/img/" + color.toString().toLowerCase() + "_" + name.toLowerCase() + ".png";
     }
     public abstract boolean canMove(Board board, Spot start, Spot end);
 }
