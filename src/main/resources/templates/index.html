@@ -31,7 +31,8 @@
         <div class="chessboard">
             <div th:each="rowArray : ${board.boxes}" class="row">
                 <div th:each="spot : ${rowArray}"
-                     th:classappend="${(spot.x + spot.y) % 2 == 0 ? 'light' : 'dark'}"
+                     th:classappend="${(spot.row + spot.col) % 2 == 0 ? 'light' : 'dark'}"
+                     th:attr="data-row=${spot.row},data-col=${spot.col}"
                      class="square">
                     <img th:if="${spot.piece != null}"
                          th:src="@{${spot.piece.iconPath}}"
@@ -100,5 +101,8 @@
     </aside>
 
 </main>
+
+<script th:src="@{/js/game.js}"></script>
+
 </body>
 </html>
