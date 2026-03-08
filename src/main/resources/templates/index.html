@@ -2,21 +2,150 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Game Cờ Vua Spring Boot</title>
+    <title>Game Cờ Vua - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* CSS bổ sung để đồng bộ header và các nút bấm */
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-right: 15px;
+        }
+        .btn-login, .btn-register {
+            text-decoration: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-login {
+            color: #ffffff;
+            border: 1px solid #4caf50;
+        }
+        .btn-login:hover {
+            background: rgba(76, 175, 80, 0.1);
+        }
+        .btn-register {
+            background-color: #4caf50;
+            color: white;
+        }
+        .btn-register:hover {
+            background-color: #45a049;
+        }
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background-color: #1a262b;
+            height: 60px;
+        }
+        .header-right-group {
+            display: flex;
+            align-items: center;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .user-profile .name {
+            font-weight: bold;
+            color: #4caf50;
+        }
+    </style>
 </head>
 <body>
-<h1>Chess Game</h1>
+<header class="top-navbar">
+    <div class="logo">
+        <h2>♟️ Chess Pro</h2>
+    </div>
 
-<div class="chessboard">
-    <div th:each="row : ${#numbers.sequence(0, 7)}" class="row">
+    <ul class="menu-items">
+        <li class="active"><a th:href="@{/}" style="color: inherit; text-decoration: none;">Chơi cờ</a></li>
+        <li><a th:href="@{/settings}" style="color: inherit; text-decoration: none;">Cài đặt</a></li>
+    </ul>
 
-        <div th:each="col : ${#numbers.sequence(0, 7)}"
-             th:classappend="${(row + col) % 2 == 0 ? 'light' : 'dark'}"
-             class="square">
+    <div class="header-right-group">
+        <div class="auth-buttons" th:if="${loggedInUser == null}">
+            <a th:href="@{/login}" class="btn-login">Đăng nhập</a>
+            <a th:href="@{/register}" class="btn-register">Đăng ký</a>
         </div>
 
+        <div class="user-profile" th:if="${loggedInUser != null}">
+            <div class="info">
+                <span class="name" th:text="${loggedInUser}">Tên người dùng</span>
+                <span class="elo" style="font-size: 11px; color: #888;">1200 Elo</span>
+            </div>
+            <a th:href="@{/profile}" style="text-decoration: none;">
+                <div class="avatar" style="font-size: 24px;">👤</div>
+            </a>
+        </div>
     </div>
-</div>
+</header>
+
+<main class="main-content">
+    <div class="board-container">
+        <div class="chessboard">
+            <div th:each="rowArray : ${board.boxes}" class="row">
+                <div th:each="spot : ${rowArray}"
+                     th:classappend="${(spot.x + spot.y) % 2 == 0 ? 'light' : 'dark'}"
+                     class="square">
+                    <img th:if="${spot.piece != null}"
+                         th:src="@{${spot.piece.iconPath}}"
+                         alt="chess-piece">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="right-panel">
+        <div class="game-info">
+            <div class="player opponent">
+                <div class="avatar">🤖</div>
+                <div class="details">
+                    <span class="name">Đối thủ</span>
+                    <span class="time">10:00</span>
+                </div>
+            </div>
+            <div class="match-status">
+                <span>Trận đấu đang diễn ra...</span>
+            </div>
+            <div class="player you">
+                <div class="avatar">👤</div>
+                <div class="details">
+                    <span class="name" th:text="${loggedInUser != null ? loggedInUser : 'Bạn'}">Bạn</span>
+                    <span class="time">10:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="move-history">
+            <div class="history-header">Lịch sử nước đi</div>
+            <div class="moves-list">
+                <div class="move-row">
+                    <span class="move-num">1.</span>
+                    <span class="move-white">e4</span>
+                    <span class="move-black">e5</span>
+                </div>
+                </div>
+        </div>
+
+        <div class="chat-box">
+            <div class="chat-header">Trò chuyện</div>
+            <div class="chat-messages">
+                <div class="message system">Chào mừng bạn đến với bàn cờ!</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="Nhập tin nhắn...">
+                <button class="btn-send">Gửi</button>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<script th:src="@{/js/game.js}"></script>
 </body>
 </html>

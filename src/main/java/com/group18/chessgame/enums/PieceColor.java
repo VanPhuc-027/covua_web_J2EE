@@ -1,4 +1,6 @@
 package com.group18.chessgame.enums;
 
-public class PieceColor {
+public enum PieceColor {
+    WHITE,
+    BLACK
 }
