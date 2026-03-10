@@ -3,6 +3,7 @@ package com.group18.chessgame.model;
 import com.group18.chessgame.enums.GameMode;
 import com.group18.chessgame.enums.GameResult;
 import com.group18.chessgame.enums.GameStatus;
+import com.group18.chessgame.enums.GameTermination;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -21,6 +22,7 @@ public class Game {
     private GameMode gameMode;
     private GameStatus status;
     private GameResult result;
+    private GameTermination termination;
 
     private List<String> moveHistory = new ArrayList<>();
 
