@@ -32,68 +32,102 @@
     </div>
 </header>
 
-<main class="main-content">
-    <div class="board-container">
-        <div class="chessboard">
-            <div th:each="rowArray : ${board.boxes}" class="row">
-                <div th:each="spot : ${rowArray}"
-                     th:classappend="${(spot.row + spot.col) % 2 == 0 ? 'light' : 'dark'}"
-                     th:attr="data-row=${spot.row},data-col=${spot.col}"
-                     class="square">
-                    <img th:if="${spot.piece != null}"
-                         th:src="@{${spot.piece.iconPath}}"
-                         alt="chess-piece">
+<main class="lobby-content">
+    <div class="lobby-main">
+        <div class="lobby-actions">
+            <h3>Danh sách phòng chờ</h3>
+            <form th:action="@{/game/create}" method="post" style="margin-bottom: 20px;">
+                <button type="submit" class="btn-create-room" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4caf50; color: white; border: none; border-radius: 5px;">
+                    ➕ Tạo phòng mới
+                </button>
+            </form>
+        </div>
+
+        <div class="room-grid">
+            <div class="room-card" th:each="game : ${waitingGames}">
+                <div class="room-info">
+                    <span class="host" th:text="${game.whitePlayer != null ? game.whitePlayer.username : game.blackPlayer.username}">Tên chủ phòng</span>
+                    <span class="details">
+                        🎮 Chế độ: <span th:text="${game.gameMode}"></span>
+                    </span>
                 </div>
+                <form th:action="@{/game/join}" method="post" style="margin: 0;">
+                    <input type="hidden" name="gameId" th:value="${game.id}">
+                    <button type="submit" class="btn-join" style="width: 100%;">Vào chơi</button>
+                </form>
+            </div>
+
+            <div th:if="${waitingGames == null || waitingGames.empty}" style="color: #aaa; padding: 20px;">
+                Hiện chưa có phòng nào. Hãy là người đầu tiên tạo phòng!
             </div>
         </div>
     </div>
 
-    <aside class="right-panel">
-        <div class="game-info">
-            <div class="player opponent">
-                <div class="avatar">🤖</div>
-                <div class="details">
-                    <span class="name">Đối thủ</span>
-                    <span class="time">10:00</span>
-                </div>
-            </div>
-            <div class="match-status">
-                <span>Trận đấu đang diễn ra...</span>
-            </div>
-            <div class="player you">
-                <div class="avatar">👤</div>
-                <div class="details">
-                    <span class="name" th:text="${currentPlayer != null ? currentPlayer.username : 'Bạn'}">Bạn</span>
-                    <span class="time">10:00</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="move-history">
-            <div class="history-header">Lịch sử nước đi</div>
-            <div class="moves-list">
-                <div class="move-row">
-                    <span class="move-num">1.</span>
-                    <span class="move-white">e4</span>
-                    <span class="move-black">e5</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="chat-box">
-            <div class="chat-header">Trò chuyện</div>
-            <div class="chat-messages">
-                <div class="message system">Chào mừng bạn đến với bàn cờ!</div>
-            </div>
-            <div class="chat-input">
-                <input type="text" placeholder="Nhập tin nhắn...">
-                <button class="btn-send">Gửi</button>
-            </div>
-        </div>
+    <aside class="leaderboard-panel">
+        <h3>🏆 Bảng Xếp Hạng</h3>
+        <ul class="ranking-list">
+            <li class="ranking-item">
+                <span class="rank">1</span>
+                <span class="name">MagnusCarlsen</span>
+                <span class="elo">2882</span>
+            </li>
+            <li class="ranking-item">
+                <span class="rank">2</span>
+                <span class="name">HikaruNakamura</span>
+                <span class="elo">2789</span>
+            </li>
+            <li class="ranking-item">
+                <span class="rank">3</span>
+                <span class="name">HoaiQuy</span>
+                <span class="elo">2500</span>
+            </li>
+        </ul>
     </aside>
 </main>
 
-<script th:src="@{/js/game.js}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var currentUsername = /*[[${currentPlayer != null ? currentPlayer.username : 'guest'}]]*/ 'guest';
+    currentUsername = String(currentUsername).trim();
+    /*]]>*/
+
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DEBUG: Tên người chơi hiện tại ở tab này là: [" + currentUsername + "]");
+
+        var socket = new SockJS('/ws');
+        var stompClient = Stomp.over(socket);
+        stompClient.debug = function(str) { console.log("STOMP Log:", str); };
+
+        stompClient.connect({}, function (frame) {
+            console.log("WebSocket đã kết nối thành công!");
+
+            stompClient.subscribe('/topic/lobby', function (message) {
+                const payload = message.body;
+                console.log("NHẬN TÍN HIỆU TỪ SERVER: ", payload);
+
+                if (payload.includes(":")) {
+                    const parts = payload.split(":");
+                    const action = parts[0];
+                    const actorName = parts[1].trim();
+
+                    console.log("SO SÁNH: [" + actorName + "] vs [" + currentUsername + "]");
+
+                    if (actorName !== currentUsername) {
+                        console.log("==> KHÁC NHAU! Đang thực hiện reload trang...");
+                        window.location.href = window.location.href; // Cách reload "cứng" hơn
+                    } else {
+                        console.log("==> TRÙNG NHAU! Không reload để chờ Redirect.");
+                    }
+                }
+            });
+        }, function(error) {
+            console.error('Lỗi kết nối WebSocket: ', error);
+        });
+    });
+</script>
 
 </body>
 </html>

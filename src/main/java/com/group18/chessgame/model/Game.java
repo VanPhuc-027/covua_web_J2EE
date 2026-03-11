@@ -23,6 +23,7 @@ public class Game {
     private GameStatus status;
     private GameResult result;
     private GameTermination termination;
+    private transient Board board = new Board();
 
     private List<String> moveHistory = new ArrayList<>();
 
@@ -47,5 +48,6 @@ public class Game {
         this.whiteTimeLeft = timeLimitSeconds;
         this.blackTimeLeft = timeLimitSeconds;
         this.createdAt = LocalDateTime.now();
+        this.board = new Board();
     }
 }

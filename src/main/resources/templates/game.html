@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bàn Cờ - Chess Pro</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header class="top-navbar">
+    <div class="logo">
+        <h2>♟️ Chess Pro</h2>
+    </div>
+
+    <ul class="menu-items">
+        <li th:if="${game.status.name() == 'WAITING'}">
+            <form th:action="@{/game/cancel}" method="post" style="margin: 0; display: inline;">
+                <input type="hidden" name="gameId" th:value="${game.id}" />
+                <button type="submit" style="background: none; border: none; color: inherit; font-size: inherit; cursor: pointer; font-family: inherit; padding: 0;">
+                    🔙 Hủy phòng & Về sảnh
+                </button>
+            </form>
+        </li>
+        <li th:if="${game.status.name() == 'IN_PROGRESS'}">
+            <a href="#" onclick="alert('Trận đấu đang diễn ra! Bạn không thể thoát lúc này.'); return false;" style="color: #ff4d4d; text-decoration: none; font-weight: bold;">🚫 Trận đấu đang diễn ra</a>
+        </li>
+    </ul>
+
+    <div class="header-right-group">
+        <div class="auth-buttons" th:if="${currentPlayer == null}">
+            <a th:href="@{/login}" class="btn-login">Đăng nhập</a>
+            <a th:href="@{/register}" class="btn-register">Đăng ký</a>
+        </div>
+
+        <a th:href="@{/profile}" class="user-profile" th:if="${currentPlayer != null}" style="text-decoration: none; color: inherit;">
+            <div class="info">
+                <span class="name" th:text="${currentPlayer.username}">Tên người dùng</span>
+                <span class="elo" th:text="${currentPlayer.eloRating} + ' Elo'">1200 Elo</span>
+            </div>
+            <div class="avatar" style="font-size: 24px;">👤</div>
+        </a>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="board-container" style="position: relative;">
+
+        <div th:if="${game.status.name() == 'WAITING'}" class="waiting-overlay">
+            <h2 style="color: #4caf50; margin-bottom: 10px;">⏳ Đang chờ đối thủ...</h2>
+            <p>Mã phòng: <span style="font-family: monospace;" th:text="${game.id}"></span></p>
+            <p style="font-size: 13px; color: #aaa; margin-top: 15px;">(Bạn có thể về sảnh, phòng sẽ không bị mất)</p>
+        </div>
+
+        <div class="chessboard">
+            <div th:each="rowArray : ${board.boxes}" class="row">
+                <div th:each="spot : ${rowArray}"
+                     th:classappend="${(spot.row + spot.col) % 2 == 0 ? 'light' : 'dark'}"
+                     th:attr="data-row=${spot.row},data-col=${spot.col}"
+                     class="square">
+                    <img th:if="${spot.piece != null}"
+                         th:src="@{${spot.piece.iconPath}}"
+                         alt="chess-piece">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="right-panel">
+        <div class="game-info">
+            <div class="player opponent">
+                <div class="avatar">🤖</div>
+                <div class="details">
+                    <span class="name" th:text="${game.whitePlayer != null and game.whitePlayer.username != currentPlayer.username ? game.whitePlayer.username : (game.blackPlayer != null and game.blackPlayer.username != currentPlayer.username ? game.blackPlayer.username : 'Đang đợi đối thủ...')}">Đối thủ</span>
+                    <span class="time">10:00</span>
+                </div>
+            </div>
+            <div class="match-status">
+                <span th:text="${game.status.name() == 'WAITING' ? 'Phòng đang chờ' : 'Trận đấu đang diễn ra...'}">Trạng thái</span>
+            </div>
+            <div class="player you">
+                <div class="avatar">👤</div>
+                <div class="details">
+                    <span class="name" th:text="${currentPlayer != null ? currentPlayer.username : 'Bạn'}">Bạn</span>
+                    <span class="time">10:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="move-history">
+            <div class="history-header">Lịch sử nước đi</div>
+            <div class="moves-list">
+                <div class="move-row">
+                    <span class="move-num">1.</span>
+                    <span class="move-white">e4</span>
+                    <span class="move-black">e5</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-box">
+            <div class="chat-header">Trò chuyện</div>
+            <div class="chat-messages">
+                <div class="message system">Chào mừng bạn đến với bàn cờ!</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="Nhập tin nhắn...">
+                <button class="btn-send">Gửi</button>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    window.CURRENT_GAME_ID = /*[[${game.id}]]*/ 'default_id';
+</script>
+
+<script th:src="@{/js/socket.js}"></script>
+<script th:src="@{/js/game.js}"></script>
+
+</body>
+</html>

@@ -2,8 +2,8 @@ package com.group18.chessgame.controller;
 
 import com.group18.chessgame.dto.LoginDTO;
 import com.group18.chessgame.dto.RegisterDTO;
-import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Player;
+import com.group18.chessgame.service.GameService;
 import com.group18.chessgame.service.PlayerService;
 import com.group18.chessgame.enums.RegisterResult;
 import jakarta.servlet.http.HttpSession;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final PlayerService playerService;
+    private final GameService gameService;
 
     @GetMapping("/register")
     public String showRegisterPage(Model model) {
@@ -27,11 +28,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public String handleRegister(@Valid @ModelAttribute RegisterDTO registerDTO, BindingResult bindingResult, Model model) {
-        if (bindingResult.hasErrors()) {
-            return "register";
-        }
-        RegisterResult result = playerService.register(registerDTO);
+        if (bindingResult.hasErrors()) return "register";
 
+        RegisterResult result = playerService.register(registerDTO);
         switch (result) {
             case USERNAME_TAKEN -> { model.addAttribute("error", "Username đã được sử dụng!"); return "register"; }
             case EMAIL_TAKEN -> { model.addAttribute("error", "Email đã được sử dụng!"); return "register"; }
@@ -42,11 +41,10 @@ public class AuthController {
     }
 
     @GetMapping("/login")
-    public String showLoginPage(Model model, @RequestParam(required = false) String registered) {
+    public String showLoginPage(Model model, @RequestParam(required = false) String registered, HttpSession session) {
+        session.setAttribute("init_session", true);
         model.addAttribute("loginDTO", new LoginDTO());
-        if (registered != null) {
-            model.addAttribute("message", "Đăng ký thành công! Vui lòng đăng nhập.");
-        }
+        if (registered != null) model.addAttribute("message", "Đăng ký thành công! Vui lòng đăng nhập.");
         return "login";
     }
 
@@ -71,12 +69,12 @@ public class AuthController {
     }
 
     @GetMapping("/")
-    public String showGamePage(Model model, HttpSession session) {
+    public String showLobbyPage(Model model, HttpSession session) {
         Player user = (Player) session.getAttribute("currentPlayer");
         if (user == null) return "redirect:/login";
 
         model.addAttribute("currentPlayer", user);
-        model.addAttribute("board", new Board());
+        model.addAttribute("waitingGames", gameService.getWaitingGame());
         return "index";
     }
 
