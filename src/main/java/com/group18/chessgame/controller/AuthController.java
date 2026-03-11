@@ -2,8 +2,11 @@ package com.group18.chessgame.controller;
 
 import com.group18.chessgame.dto.LoginDTO;
 import com.group18.chessgame.dto.RegisterDTO;
+import com.group18.chessgame.enums.GameMode;
 import com.group18.chessgame.model.Board;
+import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
+import com.group18.chessgame.service.GameService;
 import com.group18.chessgame.service.PlayerService;
 import com.group18.chessgame.enums.RegisterResult;
 import jakarta.servlet.http.HttpSession;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final PlayerService playerService;
+    private final GameService gameService;
 
     @GetMapping("/register")
     public String showRegisterPage(Model model) {
@@ -76,7 +80,7 @@ public class AuthController {
         if (user == null) return "redirect:/login";
 
         model.addAttribute("currentPlayer", user);
-        model.addAttribute("board", new Board());
+        model.addAttribute("waitingGames", gameService.getWaitingGame());
         return "index";
     }
 
@@ -87,5 +91,40 @@ public class AuthController {
 
         model.addAttribute("currentPlayer", user);
         return "profile";
+    }
+
+    @PostMapping("game/create")
+    public String createGame(HttpSession session) {
+        Player creator = (Player) session.getAttribute("currentPlayer");
+        if (creator == null) return "redirect:/login";
+        Game newGame = gameService.createGame(creator, GameMode.Player_VS_Player);
+        return "redirect:/game/" + newGame.getId();
+    }
+
+    @PostMapping("game/join")
+    public String joinGame(@RequestParam String gameId, HttpSession session) {
+        Player player = (Player) session.getAttribute("currentPlayer");
+        if (player == null) return "redirect:/login";
+        Game joinGame = gameService.joinGame(gameId, player);
+        if (joinGame == null) {
+            return "redirect:/";
+        }
+        return "redirect:/game/" + gameId;
+    }
+
+    @GetMapping("/game/{id}")
+    public String showGameRoom(@PathVariable String id, Model model, HttpSession session) {
+        Player currentPlayer = (Player) session.getAttribute("currentPlayer");
+        if (currentPlayer == null) {
+            return "redirect:/login";
+        }
+        Game game = gameService.getGame(id);
+        if (game == null) {
+            return "redirect:/";
+        }
+        model.addAttribute("currentPlayer", currentPlayer);
+        model.addAttribute("game", game);
+        model.addAttribute("board", game.getBoard());
+        return "game";
     }
 }

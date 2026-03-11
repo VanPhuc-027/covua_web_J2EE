@@ -6,12 +6,14 @@ import com.group18.chessgame.enums.GameStatus;
 import com.group18.chessgame.enums.GameTermination;
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Service
 public class GameService {
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
 
@@ -30,16 +32,22 @@ public class GameService {
     public Game joinGame(String gameId, Player player) {
         Game game = activeGames.get(gameId);
         if (game == null) return null;
-        if (game.getStatus() != GameStatus.WAITING) return null;
-        if (game.getWhitePlayer() == null){
-            game.setWhitePlayer(player);
+        boolean isWhite = game.getWhitePlayer() != null && game.getWhitePlayer().getUsername().equals(player.getUsername());
+        boolean isBlack = game.getBlackPlayer() != null && game.getBlackPlayer().getUsername().equals(player.getUsername());
+        if (isWhite || isBlack) {
+            return game;
         }
-        else {
-            game.setBlackPlayer(player);
+        if (game.getStatus() == GameStatus.WAITING) {
+            if (game.getWhitePlayer() == null) {
+                game.setWhitePlayer(player);
+            } else {
+                game.setBlackPlayer(player);
+            }
+            game.setStatus(GameStatus.IN_PROGRESS);
+            game.setStartedAt(LocalDateTime.now());
+            return game;
         }
-        game.setStatus(GameStatus.IN_PROGRESS);
-        game.setStartedAt(LocalDateTime.now());
-        return game;
+        return null;
     }
 
     public Game finishGame(String gameId, GameResult gameResult, GameTermination termination) {
@@ -66,19 +74,18 @@ public class GameService {
         double scoreWhite, scoreBlack;
 
         switch (game.getResult()) {
-            case WHITE_WINS:
+            case WHITE_WINS -> {
                 scoreWhite = 1.0;
                 scoreBlack = 0.0;
-                break;
-            case BLACK_WINS:
+            }
+            case BLACK_WINS -> {
                 scoreWhite = 0.0;
                 scoreBlack = 1.0;
-                break;
-            case DRAW:
-            default:
+            }
+            case null, default -> {
                 scoreWhite = 0.5;
                 scoreBlack = 0.5;
-                break;
+            }
         }
 
         int whiteEloChange = (int) Math.round(k * (scoreWhite - expectedWhite));
