@@ -4,58 +4,6 @@
     <meta charset="UTF-8">
     <title>Game Cờ Vua - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
-    <style>
-        /* CSS bổ sung để đồng bộ header và các nút bấm */
-        .auth-buttons {
-            display: flex;
-            gap: 10px;
-            margin-right: 15px;
-        }
-        .btn-login, .btn-register {
-            text-decoration: none;
-            padding: 5px 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        .btn-login {
-            color: #ffffff;
-            border: 1px solid #4caf50;
-        }
-        .btn-login:hover {
-            background: rgba(76, 175, 80, 0.1);
-        }
-        .btn-register {
-            background-color: #4caf50;
-            color: white;
-        }
-        .btn-register:hover {
-            background-color: #45a049;
-        }
-        .top-navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            background-color: #1a262b;
-            height: 60px;
-        }
-        .header-right-group {
-            display: flex;
-            align-items: center;
-        }
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-        }
-        .user-profile .name {
-            font-weight: bold;
-            color: #4caf50;
-        }
-    </style>
 </head>
 <body>
 <header class="top-navbar">
@@ -69,20 +17,18 @@
     </ul>
 
     <div class="header-right-group">
-        <div class="auth-buttons" th:if="${loggedInUser == null}">
+        <div class="auth-buttons" th:if="${currentPlayer == null}">
             <a th:href="@{/login}" class="btn-login">Đăng nhập</a>
             <a th:href="@{/register}" class="btn-register">Đăng ký</a>
         </div>
 
-        <div class="user-profile" th:if="${loggedInUser != null}">
+        <a th:href="@{/profile}" class="user-profile" th:if="${currentPlayer != null}" style="text-decoration: none; color: inherit;">
             <div class="info">
-                <span class="name" th:text="${loggedInUser}">Tên người dùng</span>
-                <span class="elo" style="font-size: 11px; color: #888;">1200 Elo</span>
+                <span class="name" th:text="${currentPlayer.username}">Tên người dùng</span>
+                <span class="elo" th:text="${currentPlayer.eloRating} + ' Elo'">1200 Elo</span>
             </div>
-            <a th:href="@{/profile}" style="text-decoration: none;">
-                <div class="avatar" style="font-size: 24px;">👤</div>
-            </a>
-        </div>
+            <div class="avatar" style="font-size: 24px;">👤</div>
+        </a>
     </div>
 </header>
 
@@ -117,7 +63,7 @@
             <div class="player you">
                 <div class="avatar">👤</div>
                 <div class="details">
-                    <span class="name" th:text="${loggedInUser != null ? loggedInUser : 'Bạn'}">Bạn</span>
+                    <span class="name" th:text="${currentPlayer != null ? currentPlayer.username : 'Bạn'}">Bạn</span>
                     <span class="time">10:00</span>
                 </div>
             </div>
@@ -131,7 +77,7 @@
                     <span class="move-white">e4</span>
                     <span class="move-black">e5</span>
                 </div>
-                </div>
+            </div>
         </div>
 
         <div class="chat-box">

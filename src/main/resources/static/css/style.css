@@ -1,4 +1,3 @@
-
 body {
     display: flex;
     flex-direction: column;
@@ -50,32 +49,74 @@ body {
     transform: translateY(-2px);
 }
 
-.user-profile {
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-login, .btn-register {
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-login {
+    color: #ffffff;
+    border: 1px solid #4caf50;
+}
+
+.btn-login:hover {
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.btn-register {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-register:hover {
+    background-color: #45a049;
+}
+
+.header-right-group {
     display: flex;
     align-items: center;
-    cursor: pointer;
+    gap: 15px;
     margin-left: auto;
 }
 
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.user-profile .name {
+    font-weight: bold;
+    color: #4caf50;
+    display: block;
+}
+
+.user-profile .elo {
+    font-size: 11px;
+    color: #888;
+}
+
 .avatar {
-    font-size: 32px;
-    margin-left: 15px;
+    font-size: 24px;
 }
 
 .info {
     display: flex;
     flex-direction: column;
     text-align: right;
-}
-
-.name {
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.elo {
-    font-size: 12px;
-    color: #aaa;
 }
 
 .main-content {
@@ -321,6 +362,7 @@ body {
     pointer-events: none;
     filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.6));
 }
+
 .valid-move {
     box-shadow: inset 0 0 0 4px rgba(76, 175, 80, 0.85);
     background-image: radial-gradient(circle at center, rgba(76, 175, 80, 0.35) 0 14px, transparent 15px);
@@ -333,33 +375,4 @@ body {
 
 .selected {
     outline: 3px solid yellow;
-.header-right-group {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 5px 15px;
-    border-radius: 20px;
-}
-
-.user-profile .name {
-    font-weight: bold;
-    color: #4caf50; /* Màu xanh chủ đạo của dự án */
-    display: block;
-}
-
-.user-profile .elo {
-    font-size: 11px;
-    color: #888;
-}
-
-.avatar {
-    font-size: 20px;
-    cursor: pointer;
 }
