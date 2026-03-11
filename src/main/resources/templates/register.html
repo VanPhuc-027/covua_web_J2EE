@@ -1,35 +1,41 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Register - Chess Pro</title>
+    <meta charset="UTF-8">
+    <title>Đăng Ký - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
 </head>
 <body>
-    <div class="auth-container">
-        <h2>Đăng Ký</h2>
-        <form th:action="@{/register}" method="post" id="registerForm">
-            <div class="form-group">
-                <label>Tên người dùng</label>
-                <input type="text" name="username" id="regUsername" required>
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label>Mật khẩu</label>
-                <input type="password" name="password" id="regPassword" required>
-            </div>
-            <div class="form-group">
-                <label>Xác nhận mật khẩu</label>
-                <input type="password" id="confirmPassword" required>
-            </div>
-            <button type="submit" class="btn-submit">Tạo Tài Khoản</button>
-        </form>
-        <div class="auth-footer">
-            Đã có tài khoản? <a th:href="@{/login}">Đăng nhập</a>
-        </div>
+<div class="auth-container">
+    <h2>Đăng Ký</h2>
+
+    <div th:if="${error}" style="color: #f44336; background: rgba(244, 67, 54, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(244, 67, 54, 0.3); text-align: center;">
+        <span th:text="${error}"></span>
     </div>
-    <script th:src="@{/js/auth.js}"></script>
+
+    <form th:action="@{/register}" method="post" id="registerForm">
+        <div class="form-group">
+            <label>Tên người dùng</label>
+            <input type="text" name="username" id="regUsername" required>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" name="password" id="regPassword" required>
+        </div>
+        <div class="form-group">
+            <label>Xác nhận mật khẩu</label>
+            <input type="password" name="confirmPassword" id="confirmPassword" required>
+        </div>
+        <button type="submit" class="btn-submit">Tạo Tài Khoản</button>
+    </form>
+    <div class="auth-footer">
+        Đã có tài khoản? <a th:href="@{/login}">Đăng nhập</a>
+    </div>
+</div>
+<script th:src="@{/js/auth.js}"></script>
 </body>
 </html>
