@@ -1,12 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
-
+    const gameId = window.CURRENT_GAME_ID; // Lấy ID phòng từ HTML
     let selectedSquare = null;
 
     function clearHighlights() {
         document.querySelectorAll(".square").forEach(s => {
-            s.classList.remove("selected");
-            s.classList.remove("valid-move");
-            s.classList.remove("valid-capture");
+            s.classList.remove("selected", "valid-move", "valid-capture");
         });
     }
 
@@ -54,12 +52,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function highlightValidMoves(fromRow, fromCol) {
         document.querySelectorAll(".square").forEach(s => {
-            s.classList.remove("valid-move");
-            s.classList.remove("valid-capture");
+            s.classList.remove("valid-move", "valid-capture");
         });
 
         try {
-            const res = await fetch(`/api/game/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`);
+            // Đã ghép gameId vào link
+            const res = await fetch(`/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`);
             const moves = await res.json();
 
             if (!Array.isArray(moves)) return;
@@ -85,7 +83,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function movePiece(fromRow, fromCol, toRow, toCol) {
         try {
-            const res = await fetch("/api/game/move", {
+            // Đã ghép gameId vào link
+            const res = await fetch(`/api/game/${gameId}/move`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -116,32 +115,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.querySelectorAll(".square").forEach(square => {
-
         square.addEventListener("click", async () => {
-
             const row = square.dataset.row;
             const col = square.dataset.col;
 
             console.log("Clicked:", row, col);
 
             if (!selectedSquare) {
-
                 if (!isPieceSquare(square)) return;
-
                 selectedSquare = {row, col};
                 square.classList.add("selected");
                 await highlightValidMoves(row, col);
-
             } else {
-
-                // click lại ô đang chọn -> bỏ chọn
                 if (selectedSquare.row === row && selectedSquare.col === col) {
                     clearHighlights();
                     selectedSquare = null;
                     return;
                 }
 
-                // nếu click vào 1 quân khác thì chuyển selection
                 if (!square.classList.contains("valid-move") && !square.classList.contains("valid-capture")) {
                     if (isPieceSquare(square)) {
                         clearHighlights();
@@ -153,14 +144,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 await movePiece(selectedSquare.row, selectedSquare.col, row, col);
-
                 clearHighlights();
-
                 selectedSquare = null;
             }
-
         });
-
     });
 
+    window.fetchAndRenderBoard = async function() {
+        try {
+            const res = await fetch(`/api/game/${gameId}/board`);
+            if (!res.ok) return;
+            const boardData = await res.json();
+            renderBoardFromResponse(boardData);
+        } catch (e) {
+            console.error("Lỗi khi kéo bàn cờ mới:", e);
+        }
+    };
 });

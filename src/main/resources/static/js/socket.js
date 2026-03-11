@@ -7,12 +7,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const socket = new SockJS('/ws');
     const stompClient = Stomp.over(socket);
     stompClient.debug = null;
+
     stompClient.connect({}, function (frame) {
         console.log('Đã kết nối WebSocket thành công. Đang nghe tại phòng: ' + gameId);
         stompClient.subscribe('/topic/game/' + gameId, function (message) {
             if (message.body === "PLAYER_JOINED") {
                 console.log("Đối thủ đã kết nối! Đang làm mới bàn cờ...");
                 window.location.reload();
+            } else if (message.body === "BOARD_UPDATED") {
+                console.log("Bàn cờ vừa thay đổi! Đang cập nhật mượt mà...");
+                if (typeof window.fetchAndRenderBoard === 'function') {
+                    window.fetchAndRenderBoard();
+                }
             }
         });
     }, function (error) {

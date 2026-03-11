@@ -2,9 +2,11 @@ package com.group18.chessgame.controller;
 
 import com.group18.chessgame.enums.GameMode;
 import com.group18.chessgame.enums.GameStatus;
+import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
 import com.group18.chessgame.service.GameService;
+import com.group18.chessgame.utils.FenUtils;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -60,9 +62,12 @@ public class GameLobbyController {
         if (currentPlayer == null) return "redirect:/login";
         Game game = gameService.getGame(id);
         if (game == null) return "redirect:/";
+        Board board = new Board();
+        FenUtils.fenToBoard(game.getCurrentFen(), board);
+        game.setBoard(board);
         model.addAttribute("currentPlayer", currentPlayer);
         model.addAttribute("game", game);
-        model.addAttribute("board", game.getBoard());
+        model.addAttribute("board", board);
         return "game";
     }
 }

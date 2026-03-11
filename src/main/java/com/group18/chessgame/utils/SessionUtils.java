@@ -1,4 +1,4 @@
-package com.group18.chessgame.util;
+package com.group18.chessgame.utils;
 
 import com.group18.chessgame.model.Player;
 import jakarta.servlet.http.HttpSession;
