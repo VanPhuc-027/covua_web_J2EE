@@ -5,7 +5,7 @@ import com.group18.chessgame.dto.MoveRequest;
 import com.group18.chessgame.enums.PieceColor;
 import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Spot;
-import com.group18.chessgame.model.piece.Piece;
+import com.group18.chessgame.model.piece.*;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -51,10 +51,10 @@ public class GameLogicService {
         if (!piece.canMove(board, start, end)) {
             return new GameResponse(false, "Invalid move for " + piece.getName(), board);
         }
-
         // di chuyển quân
         board.movePiece(start, end);
-
+        //phong quân
+        handlePromotion(end, move.getPromotion());
         // đổi lượt
         switchTurn();
         return new GameResponse(true, "Move successful", board);
@@ -104,6 +104,46 @@ public class GameLogicService {
         }
 
         return moves;
+    }
+
+    private void handlePromotion(Spot end, String promotion) {
+
+        Piece piece = end.getPiece();
+
+        if (!(piece instanceof Pawn)) return;
+
+        PieceColor color = piece.getColor();
+        int row = end.getRow();
+
+        boolean isPromotion =
+                (color == PieceColor.WHITE && row == 0) ||
+                        (color == PieceColor.BLACK && row == 7);
+
+        if (!isPromotion) return;
+
+        if (promotion == null || promotion.isBlank()) {
+            promotion = "QUEEN";
+        }
+
+        promotion = promotion.toUpperCase();
+
+        Piece newPiece;
+
+        switch (promotion) {
+            case "ROOK":
+                newPiece = new Rook(color);
+                break;
+            case "BISHOP":
+                newPiece = new Bishop(color);
+                break;
+            case "KNIGHT":
+                newPiece = new Knight(color);
+                break;
+            default:
+                newPiece = new Queen(color);
+        }
+
+        end.setPiece(newPiece);
     }
 
 }

@@ -103,6 +103,36 @@
 </main>
 
 <script th:src="@{/js/game.js}"></script>
+<div id="promotionModal" class="promotion-modal hidden">
+    <div class="promotion-container">
+        <div class="promotion-title">
+            Chọn quân để phong
+        </div>
 
+        <div class="promotion-options">
+
+            <img class="promotion-piece"
+                 data-piece="QUEEN"
+                 th:src="@{/img/white_queen.png}"
+                 alt="Queen">
+
+            <img class="promotion-piece"
+                 data-piece="ROOK"
+                 th:src="@{/img/white_rook.png}"
+                 alt="Rook">
+
+            <img class="promotion-piece"
+                 data-piece="BISHOP"
+                 th:src="@{/img/white_bishop.png}"
+                 alt="Bishop">
+
+            <img class="promotion-piece"
+                 data-piece="KNIGHT"
+                 th:src="@{/img/white_knight.png}"
+                 alt="Knight">
+
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -9,5 +9,5 @@ public class MoveRequest {
     private int fromCol;
     private int toRow;
     private int toCol;
-
+    private String promotion; // QUEEN, ROOK, BISHOP, KNIGHT
 }

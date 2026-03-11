@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
 
     let selectedSquare = null;
+    let pendingMove = null;
 
     function clearHighlights() {
         document.querySelectorAll(".square").forEach(s => {
@@ -83,7 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    async function movePiece(fromRow, fromCol, toRow, toCol) {
+    async function movePiece(fromRow, fromCol, toRow, toCol, promotion) {
         try {
             const res = await fetch("/api/game/move", {
                 method: "POST",
@@ -94,7 +95,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     fromRow: parseInt(fromRow),
                     fromCol: parseInt(fromCol),
                     toRow: parseInt(toRow),
-                    toCol: parseInt(toCol)
+                    toCol: parseInt(toCol),
+                    promotion: promotion
                 })
             });
 
@@ -114,6 +116,57 @@ document.addEventListener("DOMContentLoaded", function () {
             return false;
         }
     }
+
+    async function handleMove(fromRow, fromCol, toRow, toCol){
+        const pieceImg = document.querySelector(
+            `.square[data-row='${fromRow}'][data-col='${fromCol}'] img`
+        );
+        if(!pieceImg){
+            return;
+        }
+        // kiểm tra pawn
+        const src = pieceImg.getAttribute("src");
+        if(src.includes("pawn") || src.includes("p")) {
+            if(toRow == 0 || toRow == 7){
+                const color = pieceImg.src.includes("white") ? "white" : "black";
+                pendingMove = {fromRow, fromCol, toRow, toCol};
+                showPromotionModal(color);
+                return;
+            }
+        }
+        await movePiece(fromRow, fromCol, toRow, toCol, null);
+    }
+
+    function showPromotionModal(color){
+        const modal = document.getElementById("promotionModal");
+        document.querySelectorAll(".promotion-piece").forEach(img => {
+
+            const piece = img.dataset.piece.toLowerCase();
+
+            img.src = `/img/${color}_${piece}.png`;
+        });
+        modal.classList.remove("hidden");
+    }
+
+    document.querySelectorAll(".promotion-piece").forEach(piece => {
+        piece.addEventListener("click", async () => {
+
+            const promotion = piece.dataset.piece;
+
+            document.getElementById("promotionModal").classList.add("hidden");
+
+            await movePiece(
+                pendingMove.fromRow,
+                pendingMove.fromCol,
+                pendingMove.toRow,
+                pendingMove.toCol,
+                promotion
+            );
+
+            pendingMove = null;
+
+        });
+    });
 
     document.querySelectorAll(".square").forEach(square => {
 
@@ -152,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+                await handleMove(selectedSquare.row, selectedSquare.col, row, col);
 
                 clearHighlights();
 
