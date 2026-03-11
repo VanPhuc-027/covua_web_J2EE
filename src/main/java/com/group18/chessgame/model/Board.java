@@ -38,4 +38,21 @@ public class Board {
         boxes[7][3].setPiece(new Queen(PieceColor.WHITE));
         boxes[7][4].setPiece(new King(PieceColor.WHITE));
     }
+
+    public Spot getSpot(int row, int col) {
+        if (!isValidPosition(row, col)) {
+            return null;
+        }
+        return boxes[row][col];
+    }
+
+    public boolean isValidPosition(int row, int col) {
+        return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+
+    public void movePiece(Spot start, Spot end) {
+        Piece piece = start.getPiece();
+        end.setPiece(piece);
+        start.setPiece(null);
+    }
 }

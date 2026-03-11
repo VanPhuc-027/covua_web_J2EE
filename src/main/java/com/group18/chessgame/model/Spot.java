@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class Spot {
-    private int x;
-    private int y;
+    private int row;
+    private int col;
     private Piece piece;
 }
