@@ -13,7 +13,12 @@
 
     <ul class="menu-items">
         <li th:if="${game.status.name() == 'WAITING'}">
-            <a th:href="@{/}" style="color: inherit; text-decoration: none;">🔙 Về Sảnh chờ</a>
+            <form th:action="@{/game/cancel}" method="post" style="margin: 0; display: inline;">
+                <input type="hidden" name="gameId" th:value="${game.id}" />
+                <button type="submit" style="background: none; border: none; color: inherit; font-size: inherit; cursor: pointer; font-family: inherit; padding: 0;">
+                    🔙 Hủy phòng & Về sảnh
+                </button>
+            </form>
         </li>
         <li th:if="${game.status.name() == 'IN_PROGRESS'}">
             <a href="#" onclick="alert('Trận đấu đang diễn ra! Bạn không thể thoát lúc này.'); return false;" style="color: #ff4d4d; text-decoration: none; font-weight: bold;">🚫 Trận đấu đang diễn ra</a>
@@ -104,6 +109,14 @@
     </aside>
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    window.CURRENT_GAME_ID = /*[[${game.id}]]*/ 'default_id';
+</script>
+
+<script th:src="@{/js/socket.js}"></script>
 <script th:src="@{/js/game.js}"></script>
 
 </body>

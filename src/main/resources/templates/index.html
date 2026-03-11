@@ -36,8 +36,10 @@
     <div class="lobby-main">
         <div class="lobby-actions">
             <h3>Danh sách phòng chờ</h3>
-            <form th:action="@{/game/create}" method="post" style="margin: 0;">
-                <button type="submit" class="btn-create-room">⚔️ Tạo phòng mới</button>
+            <form th:action="@{/game/create}" method="post" style="margin-bottom: 20px;">
+                <button type="submit" class="btn-create-room" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4caf50; color: white; border: none; border-radius: 5px;">
+                    ➕ Tạo phòng mới
+                </button>
             </form>
         </div>
 
@@ -83,7 +85,49 @@
     </aside>
 </main>
 
-<script th:src="@{/js/game.js}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var currentUsername = /*[[${currentPlayer != null ? currentPlayer.username : 'guest'}]]*/ 'guest';
+    currentUsername = String(currentUsername).trim();
+    /*]]>*/
+
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DEBUG: Tên người chơi hiện tại ở tab này là: [" + currentUsername + "]");
+
+        var socket = new SockJS('/ws');
+        var stompClient = Stomp.over(socket);
+        stompClient.debug = function(str) { console.log("STOMP Log:", str); };
+
+        stompClient.connect({}, function (frame) {
+            console.log("WebSocket đã kết nối thành công!");
+
+            stompClient.subscribe('/topic/lobby', function (message) {
+                const payload = message.body;
+                console.log("NHẬN TÍN HIỆU TỪ SERVER: ", payload);
+
+                if (payload.includes(":")) {
+                    const parts = payload.split(":");
+                    const action = parts[0];
+                    const actorName = parts[1].trim();
+
+                    console.log("SO SÁNH: [" + actorName + "] vs [" + currentUsername + "]");
+
+                    if (actorName !== currentUsername) {
+                        console.log("==> KHÁC NHAU! Đang thực hiện reload trang...");
+                        window.location.href = window.location.href; // Cách reload "cứng" hơn
+                    } else {
+                        console.log("==> TRÙNG NHAU! Không reload để chờ Redirect.");
+                    }
+                }
+            });
+        }, function(error) {
+            console.error('Lỗi kết nối WebSocket: ', error);
+        });
+    });
+</script>
 
 </body>
 </html>
