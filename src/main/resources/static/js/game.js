@@ -160,4 +160,48 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Lỗi khi kéo bàn cờ mới:", e);
         }
     };
+
+    function sendChatMessage() {
+        const inputField = document.getElementById("chat-input");
+        const content = inputField.value.trim();
+
+        if (content !== "" && window.stompClient) {
+            const chatMessage = {
+                gameId: window.CURRENT_GAME_ID,
+                sender: window.CURRENT_USERNAME,
+                content: content,
+                type: "CHAT"
+            };
+            window.stompClient.send("/app/chat/" + window.CURRENT_GAME_ID, {}, JSON.stringify(chatMessage));
+            inputField.value = "";
+        }
+    }
+
+    window.renderChatMessage = function(chatMessage) {
+        const messageContainer = document.getElementById("chat-messages");
+        if (chatMessage.type === "SYSTEM") {
+            const sysMsg = document.createElement("div");
+            sysMsg.style.cssText = "text-align: center; font-size: 11px; color: #777; margin: 5px 0;";
+            sysMsg.innerText = chatMessage.content;
+            messageContainer.appendChild(sysMsg);
+        } else {
+            const isMe = chatMessage.sender === window.CURRENT_USERNAME;
+            const wrapper = document.createElement("div");
+            wrapper.className = `message-wrapper ${isMe ? 'me' : 'them'}`;
+            wrapper.innerHTML = `
+            <div class="chat-sender">${isMe ? 'BẠN' : chatMessage.sender}</div>
+            <div class="chat-bubble">${chatMessage.content}</div>
+        `;
+            messageContainer.appendChild(wrapper);
+        }
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    };
+
+    document.getElementById("btn-send-chat").addEventListener("click", sendChatMessage);
+
+    document.getElementById("chat-input").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            sendChatMessage();
+        }
+    });
 });

@@ -73,7 +73,7 @@ public class AuthController {
     public String showLobbyPage(Model model, HttpSession session) {
         Player user = (Player) session.getAttribute("currentPlayer");
         if (user == null) return "redirect:/login";
-
+        ActiveUserListener.addSession(session.getId());
         model.addAttribute("currentPlayer", user);
         model.addAttribute("waitingGames", gameService.getWaitingGame());
         model.addAttribute("topPlayers", playerService.getTopPlayers());
