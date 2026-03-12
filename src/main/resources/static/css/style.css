@@ -333,6 +333,35 @@ body {
 
 .selected {
     outline: 3px solid yellow;
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px 15px;
+    border-radius: 20px;
+}
+
+.user-profile .name {
+    font-weight: bold;
+    color: #4caf50; /* Màu xanh chủ đạo của dự án */
+    display: block;
+}
+
+.user-profile .elo {
+    font-size: 11px;
+    color: #888;
+}
+
+.avatar {
+    font-size: 20px;
+    cursor: pointer;
 }
 
 .promotion-modal{
