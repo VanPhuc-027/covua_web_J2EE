@@ -98,12 +98,14 @@
 
         <div class="chat-box">
             <div class="chat-header">Trò chuyện</div>
-            <div class="chat-messages">
-                <div class="message system">Chào mừng bạn đến với bàn cờ!</div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message system" style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 10px;">
+                    Chào mừng bạn đến với bàn cờ!
+                </div>
             </div>
             <div class="chat-input">
-                <input type="text" placeholder="Nhập tin nhắn...">
-                <button class="btn-send">Gửi</button>
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+                <button id="btn-send-chat">Gửi</button>
             </div>
         </div>
     </aside>
@@ -114,6 +116,7 @@
 
 <script th:inline="javascript">
     window.CURRENT_GAME_ID = /*[[${game.id}]]*/ 'default_id';
+    window.CURRENT_USERNAME = /*[[${currentPlayer != null ? currentPlayer.username : 'guest'}]]*/ 'guest';
 </script>
 
 <script th:src="@{/js/socket.js}"></script>

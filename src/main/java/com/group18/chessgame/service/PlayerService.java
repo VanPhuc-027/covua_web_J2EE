@@ -44,4 +44,8 @@ public class PlayerService {
         }
         return null;
     }
+
+    public List<Player> getTopPlayers() {
+        return playerRepository.findTop10ByOrderByEloRatingDesc();
+    }
 }

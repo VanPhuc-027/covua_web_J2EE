@@ -552,3 +552,55 @@ body {
     border-radius: 12px;
     text-align: center;
 }
+
+.chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+/* Khung bọc tin nhắn */
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.message-wrapper.me {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-wrapper.them {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.chat-bubble {
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+    border-radius: 4px;
+}
+
+.me .chat-bubble {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #fff;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.them .chat-bubble {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-sender {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+}
