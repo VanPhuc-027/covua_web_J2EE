@@ -4,5 +4,6 @@ public enum RegisterResult {
     SUCCESS,
     USERNAME_TAKEN,
     PASSWORD_MISMATCH,
-    EMAIL_TAKEN
+    EMAIL_TAKEN,
+    PASSWORD_INVALID
 }

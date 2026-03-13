@@ -161,6 +161,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     };
 
+    async function loadChatHistory() {
+        try {
+            const response = await fetch(`/api/game/${gameId}/chat-history`);
+            if (response.ok) {
+                const chatHistory = await response.json();
+                if (chatHistory && chatHistory.length > 0) {
+                    chatHistory.forEach(chatMessage => {
+                        if (typeof window.renderChatMessage === 'function') {
+                            window.renderChatMessage(chatMessage);
+                        }
+                    });
+                }
+            } else {
+                console.error("Lỗi khi tải lịch sử chat, mã trạng thái:", response.status);
+            }
+        } catch (error) {
+            console.error("Lỗi kết nối khi tải lịch sử chat:", error);
+        }
+    }
+
     function sendChatMessage() {
         const inputField = document.getElementById("chat-input");
         const content = inputField.value.trim();
@@ -204,4 +224,5 @@ document.addEventListener("DOMContentLoaded", function () {
             sendChatMessage();
         }
     });
+    loadChatHistory();
 });

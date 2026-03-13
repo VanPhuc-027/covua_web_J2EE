@@ -33,9 +33,17 @@ public class AuthController {
 
         RegisterResult result = playerService.register(registerDTO);
         switch (result) {
-            case USERNAME_TAKEN -> { model.addAttribute("error", "Username đã được sử dụng!"); return "register"; }
-            case EMAIL_TAKEN -> { model.addAttribute("error", "Email đã được sử dụng!"); return "register"; }
-            case PASSWORD_MISMATCH -> { model.addAttribute("error", "Mật khẩu xác nhận không khớp!"); return "register"; }
+            case USERNAME_TAKEN -> { model.addAttribute("error",
+                    "Username đã được sử dụng!"); return "register"; }
+            case EMAIL_TAKEN -> { model.addAttribute("error",
+                    "Email đã được sử dụng!"); return "register"; }
+            case PASSWORD_MISMATCH -> { model.addAttribute("error",
+                    "Mật khẩu xác nhận không khớp!"); return "register"; }
+            case PASSWORD_INVALID -> {
+                model.addAttribute("error", "Mật khẩu phải có ít nhất 8 ký tự, " +
+                        "gồm ít nhất một chữ viết hoa và một chữ số!");
+                return "register";
+            }
             case SUCCESS -> { return "redirect:/login?registered=true"; }
         }
         return "register";
@@ -73,7 +81,6 @@ public class AuthController {
     public String showLobbyPage(Model model, HttpSession session) {
         Player user = (Player) session.getAttribute("currentPlayer");
         if (user == null) return "redirect:/login";
-        ActiveUserListener.addSession(session.getId());
         model.addAttribute("currentPlayer", user);
         model.addAttribute("waitingGames", gameService.getWaitingGame());
         model.addAttribute("topPlayers", playerService.getTopPlayers());
