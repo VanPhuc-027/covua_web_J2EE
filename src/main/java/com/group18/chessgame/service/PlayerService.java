@@ -40,8 +40,6 @@ public class PlayerService {
         player.setUsername(dto.getUsername());
         player.setEmail(dto.getEmail());
         player.setPassword(passwordEncoder.encode(dto.getPassword()));
-        player.setPassword(dto.getPassword());
-
         playerRepository.save(player);
         System.out.println("DEBUG: Đăng ký thành công cho " + dto.getUsername());
         return RegisterResult.SUCCESS;
