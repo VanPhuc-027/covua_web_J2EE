@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface GameRepository extends JpaRepository<Game, String> {
-    List<Game> findByStatus(GameStatus status);
+    List<Game> findByStatusIn(List<GameStatus> statuses);
 }
