@@ -96,4 +96,9 @@ public class AuthController {
         model.addAttribute("currentPlayer", user);
         return "profile";
     }
+
+    @GetMapping("/settings")
+    public String showSettingsPage() {
+        return "settings";
+    }
 }

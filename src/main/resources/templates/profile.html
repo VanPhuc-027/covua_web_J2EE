@@ -4,41 +4,34 @@
     <meta charset="UTF-8">
     <title>Hồ sơ - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
-    <style>
-        .profile-info { text-align: center; }
-        .avatar-circle { width: 100px; height: 100px; background: #4caf50; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: white; }
-        .stats { display: flex; justify-content: space-around; margin-top: 1.5rem; border-top: 1px solid #3d515a; padding-top: 1rem; margin-bottom: 1.5rem; }
-        .stat-item { text-align: center; }
-        .stat-item strong { display: block; font-size: 1.2rem; color: #4caf50; }
-        .stat-item span { font-size: 0.8rem; color: #aaa; }
-    </style>
 </head>
 <body>
-<div class="auth-container">
+<div class="auth-container profile-container" style="border: 1px solid var(--neon-green); box-shadow: 0 0 20px var(--neon-green-glow);">
     <div class="profile-info">
-        <div class="avatar-circle" th:text="${#strings.substring(currentPlayer.username,0,1).toUpperCase()}">G</div>
 
-        <h2 style="margin-bottom: 0;" th:text="${currentPlayer.username}">Tên người dùng</h2>
-        <p style="color: #aaa; font-size: 0.9rem;">Hạng: <span th:text="${currentPlayer.eloRating >= 1500 ? 'Cao thủ' : 'Tân binh'}"></span></p>
+        <div class="avatar-circle neon" th:text="${#strings.substring(currentPlayer.username,0,1).toUpperCase()}">G</div>
 
-        <div class="stats">
+        <h2 class="neon-text" th:text="${currentPlayer.username}">Tên người dùng</h2>
+        <p style="color: #aaa; font-size: 1rem; margin-top: -10px;">Hạng: <span style="color: white; font-weight: bold;" th:text="${currentPlayer.eloRating >= 1500 ? 'Cao thủ' : 'Tân binh'}"></span></p>
+
+        <div class="stats neon">
             <div class="stat-item">
-                <strong>0</strong>
+                <strong class="neon-green">0</strong>
                 <span>Thắng</span>
             </div>
             <div class="stat-item">
-                <strong>0</strong>
+                <strong class="neon-green">0</strong>
                 <span>Thua</span>
             </div>
             <div class="stat-item">
-                <strong th:text="${currentPlayer.eloRating}">1200</strong>
+                <strong class="neon-green" th:text="${currentPlayer.eloRating}">1200</strong>
                 <span>Elo</span>
             </div>
         </div>
 
-        <a th:href="@{/logout}" class="btn-submit" style="background-color: #f44336; display: block; text-decoration: none; color: white; margin-bottom: 10px;">Đăng xuất</a>
+        <a th:href="@{/logout}" class="btn-neon-logout">Đăng xuất</a>
 
-        <a th:href="@{/}" style="display:block; margin-top: 15px; color: #4caf50; text-decoration: none; font-weight: bold;">
+        <a th:href="@{/}" class="link-neon-back">
             ← Quay lại bàn cờ
         </a>
     </div>
