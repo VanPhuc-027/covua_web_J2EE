@@ -4,39 +4,49 @@ import com.group18.chessgame.enums.GameMode;
 import com.group18.chessgame.enums.GameResult;
 import com.group18.chessgame.enums.GameStatus;
 import com.group18.chessgame.enums.GameTermination;
+import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
+import com.group18.chessgame.repository.GameRepository;
+import com.group18.chessgame.repository.PlayerRepository;
+import com.group18.chessgame.utils.FenUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class GameService {
-    private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
+    private final GameRepository gameRepository;
+    private final PlayerRepository playerRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public Game createGame(Player creator, GameMode gameMode) {
-        boolean isWhite = Math.random() < 0.5;
-
         Game game = new Game (
-                isWhite ? creator : null,
-                isWhite ? null : creator,
+                creator,
+                null,
                 gameMode
         );
-        activeGames.put(game.getId(), game);
-        return game;
+        game.setCurrentFen(FenUtils.boardToFen(new Board()));
+        Game savedGame = gameRepository.save(game);
+        messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:" + creator.getUsername());
+        return savedGame;
     }
 
     public Game joinGame(String gameId, Player player) {
-        Game game = activeGames.get(gameId);
+        Game game = gameRepository.findById(gameId).orElse(null);
         if (game == null) return null;
+
         boolean isWhite = game.getWhitePlayer() != null && game.getWhitePlayer().getUsername().equals(player.getUsername());
         boolean isBlack = game.getBlackPlayer() != null && game.getBlackPlayer().getUsername().equals(player.getUsername());
         if (isWhite || isBlack) {
             return game;
         }
+
         if (game.getStatus() == GameStatus.WAITING) {
             if (game.getWhitePlayer() == null) {
                 game.setWhitePlayer(player);
@@ -45,20 +55,24 @@ public class GameService {
             }
             game.setStatus(GameStatus.IN_PROGRESS);
             game.setStartedAt(LocalDateTime.now());
-            return game;
+            Game savedGame = gameRepository.save(game);
+            messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:" + player.getUsername());
+            return savedGame;
         }
         return null;
     }
 
     public Game finishGame(String gameId, GameResult gameResult, GameTermination termination) {
-        Game game = activeGames.get(gameId);
+        Game game = gameRepository.findById(gameId).orElse(null);
         if (game == null) return null;
         game.setStatus(GameStatus.FINISHED);
         game.setResult(gameResult);
         game.setTermination(termination);
         game.setFinishedAt(LocalDateTime.now());
         calculateEloChanges(game);
-        return game;
+        Game savedGame = gameRepository.save(game);
+        messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:system");
+        return savedGame;
     }
 
     private void calculateEloChanges(Game game) {
@@ -94,18 +108,19 @@ public class GameService {
         game.setBlackEloChange(blackEloChange);
         whitePlayer.setEloRating(whitePlayer.getEloRating() + whiteEloChange);
         blackPlayer.setEloRating(blackPlayer.getEloRating() + blackEloChange);
+        playerRepository.save(whitePlayer);
+        playerRepository.save(blackPlayer);
     }
     public Game getGame(String gameId) {
-        return activeGames.get(gameId);
+        return gameRepository.findById(gameId).orElse(null);
     }
 
     public List<Game> getWaitingGame() {
-        return activeGames.values().stream()
-                .filter(game -> game.getStatus() == GameStatus.WAITING)
-                .toList();
+        return gameRepository.findByStatusIn(Arrays.asList(GameStatus.WAITING, GameStatus.IN_PROGRESS));
     }
 
     public void removeGame(String gameId) {
-        activeGames.remove(gameId);
+        gameRepository.deleteById(gameId);
+        messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:system");
     }
 }

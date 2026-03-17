@@ -1,9 +1,7 @@
 package com.group18.chessgame.model;
 
-import com.group18.chessgame.enums.GameMode;
-import com.group18.chessgame.enums.GameResult;
-import com.group18.chessgame.enums.GameStatus;
-import com.group18.chessgame.enums.GameTermination;
+import com.group18.chessgame.enums.*;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,20 +10,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Entity
+@Table(name = "games")
 @Data
 @NoArgsConstructor
 public class Game {
+    @Id
     private String id;
+
+    @ManyToOne
+    @JoinColumn(name = "white_player_id")
     private Player whitePlayer;
+
+    @ManyToOne
+    @JoinColumn(name = "black_player_id")
     private Player blackPlayer;
 
+    @Enumerated(EnumType.STRING)
     private GameMode gameMode;
-    private GameStatus status;
-    private GameResult result;
-    private GameTermination termination;
-    private transient Board board = new Board();
 
-    private List<String> moveHistory = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    private GameStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private GameResult result;
+
+    @Enumerated(EnumType.STRING)
+    private GameTermination termination;
+
+    @Transient
+    private Board board = new Board();
+
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    private List<Move> moveHistory = new ArrayList<>();
+
+    @Column(columnDefinition = "VARCHAR(255) DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'")
+    private String currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+
+    @Enumerated(EnumType.STRING)
+    private PieceColor currentTurn = PieceColor.WHITE;
 
     private int whiteEloChange = 0;
     private int blackEloChange = 0;
