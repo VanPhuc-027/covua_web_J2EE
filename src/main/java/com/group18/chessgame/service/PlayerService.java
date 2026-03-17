@@ -9,8 +9,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.group18.chessgame.enums.RegisterResult;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,13 +24,11 @@ public class PlayerService {
         if (playerRepository.existsByEmail(dto.getEmail())) {
             return RegisterResult.EMAIL_TAKEN;
         }
-        System.out.println("DEBUG Register - Pass: [" + dto.getPassword() + "] | Confirm: [" + dto.getConfirmPassword() + "]");
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
             return RegisterResult.PASSWORD_MISMATCH;
         }
         String passwordRegex = "^(?=.*[A-Z])(?=.*\\d).{8,}$";
         if (!dto.getPassword().matches(passwordRegex)) {
-            System.out.println("DEBUG: Password " + dto.getPassword() + " KHÔNG khớp Regex!");
             return RegisterResult.PASSWORD_INVALID;
         }
 
@@ -41,7 +37,6 @@ public class PlayerService {
         player.setEmail(dto.getEmail());
         player.setPassword(passwordEncoder.encode(dto.getPassword()));
         playerRepository.save(player);
-        System.out.println("DEBUG: Đăng ký thành công cho " + dto.getUsername());
         return RegisterResult.SUCCESS;
     }
 
@@ -55,5 +50,17 @@ public class PlayerService {
 
     public List<Player> getTopPlayers() {
         return playerRepository.findTop10ByOrderByEloRatingDesc();
+    }
+
+    public List<Player> getAllPlayers() {
+        return playerRepository.findAll();
+    }
+
+    public void togglePlayerBan(Long id) {
+        Player player = playerRepository.findById(id).orElse(null);
+        if (player != null) {
+            player.setActive(!player.isActive());
+            playerRepository.save(player);
+        }
     }
 }
