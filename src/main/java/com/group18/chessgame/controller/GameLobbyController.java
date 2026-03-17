@@ -61,7 +61,9 @@ public class GameLobbyController {
         Player currentPlayer = (Player) session.getAttribute("currentPlayer");
         if (currentPlayer == null) return "redirect:/login";
         Game game = gameService.getGame(id);
-        if (game == null) return "redirect:/";
+        if (game == null) {
+            return "redirect:/";
+        }
         Board board = new Board();
         FenUtils.fenToBoard(game.getCurrentFen(), board);
         game.setBoard(board);

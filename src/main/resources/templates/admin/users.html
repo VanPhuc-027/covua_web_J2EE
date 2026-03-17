@@ -2,44 +2,52 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý người chơi - Admin</title>
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <title>Quản trị viên - Chess Pro</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
-<div class="admin-container">
-    <h2 class="admin-header">DANH SÁCH TÀI KHOẢN</h2>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <table class="admin-table">
-        <thead>
-        <tr>
-            <th>Tên định danh</th>
-            <th>Email</th>
-            <th>ELO</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="player : ${players}">
-            <td th:text="${player.username}">username</td>
-            <td th:text="${player.email}">email@example.com</td>
-            <td th:text="${player.eloRating}">1200</td>
-            <td style="color: #4caf50;">Hoạt động</td>
-            <td>
-                <span th:if="${player.id == session.currentPlayer.id}" style="color: #888; font-style: italic;">(Tài khoản của bạn)</span>
-                <form th:unless="${player.id == session.currentPlayer.id}" th:action="@{/admin/users/ban}" method="post" style="margin: 0;">
-                    <input type="hidden" name="id" th:value="${player.id}">
-                    <button type="submit" class="btn-ban" th:if="${player.active}">Khóa</button>
-                    <button type="submit" class="btn-ban" th:unless="${player.active}" style="color: #4caf50; border-color: #4caf50;">Mở khóa</button>
-                </form>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+<main class="lobby-content admin-content">
+    <div class="settings-box admin-box">
+        <div class="settings-header">
+            <h3>QUẢN LÝ TÀI KHOẢN</h3>
+        </div>
 
-    <a th:href="@{/}" class="link-back">← Quay lại sảnh chờ</a>
-</div>
+        <table class="user-table">
+            <thead>
+            <tr>
+                <th>Tên định danh</th>
+                <th>Email</th>
+                <th>ELO</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="player : ${players}">
+                <td th:text="${player.username}">Username</td>
+                <td th:text="${player.email}">Email</td>
+                <td th:text="${player.eloRating}">1200</td>
+                <td>
+                    <span th:if="${player.active}" class="status-active">Hoạt động</span>
+                    <span th:unless="${player.active}" class="status-banned">Bị khóa</span>
+                </td>
+                <td>
+                    <span th:if="${player.id == session.currentPlayer.id}" style="color: #889296; font-style: italic;">(Tài khoản của bạn)</span>
+
+                    <form th:unless="${player.id == session.currentPlayer.id}" th:action="@{/admin/users/ban}" method="post" style="margin: 0;">
+                        <input type="hidden" name="id" th:value="${player.id}">
+                        <button type="submit" class="btn-ban" th:if="${player.active}">Khóa</button>
+                        <button type="submit" class="btn-unban" th:unless="${player.active}">Mở khóa</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 
 </body>
 </html>
