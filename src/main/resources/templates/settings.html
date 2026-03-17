@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cài đặt - Chess Pro</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="settings-wrapper">
+    <div class="settings-box">
+
+        <h2 style="color: #fff; text-shadow: 0 0 10px #4caf50; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; font-size: 2rem;">
+            CÀI ĐẶT
+        </h2>
+
+        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #3d515a; margin-bottom: 25px;">
+
+            <div class="setting-item">
+                <div class="setting-label">
+                    Âm thanh ván cờ
+                    <span class="setting-desc">Phát tiếng khi di chuyển hoặc ăn quân</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleSound">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-label">
+                    Hiển thị gợi ý
+                    <span class="setting-desc">Đánh dấu các ô hợp lệ khi bấm vào quân cờ</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleHints">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <div class="setting-label">
+                    Chế độ tập trung
+                    <span class="setting-desc">Làm mờ nền xung quanh bàn cờ</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleFocus">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+        </div>
+
+        <button onclick="saveSettings()" class="btn-submit-settings">LƯU CÀI ĐẶT</button>
+
+        <a th:href="@{/}" style="display: block; margin-top: 20px; color: #4caf50; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; transition: all 0.2s;" onmouseover="this.style.textShadow='0 0 8px rgba(76, 175, 80, 0.6)'" onmouseout="this.style.textShadow='none'">
+            ← Quay lại bàn cờ
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const soundEnabled = localStorage.getItem('chess_sound') !== 'false';
+        const hintsEnabled = localStorage.getItem('chess_hints') !== 'false';
+        const focusEnabled = localStorage.getItem('chess_focus') === 'true';
+
+        document.getElementById('toggleSound').checked = soundEnabled;
+        document.getElementById('toggleHints').checked = hintsEnabled;
+        document.getElementById('toggleFocus').checked = focusEnabled;
+    });
+
+    function saveSettings() {
+        const soundEnabled = document.getElementById('toggleSound').checked;
+        const hintsEnabled = document.getElementById('toggleHints').checked;
+        const focusEnabled = document.getElementById('toggleFocus').checked;
+
+        localStorage.setItem('chess_sound', soundEnabled);
+        localStorage.setItem('chess_hints', hintsEnabled);
+        localStorage.setItem('chess_focus', focusEnabled);
+
+        const btn = document.querySelector('.btn-submit-settings');
+        const originalText = btn.innerText;
+        btn.innerText = "ĐÃ LƯU ✓";
+        btn.style.backgroundColor = "#4caf50";
+        btn.style.color = "#fff";
+        btn.style.textShadow = "none";
+
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.backgroundColor = "transparent";
+            btn.style.color = "#4caf50";
+        }, 1500);
+    }
+</script>
+</body>
+</html>

@@ -49,8 +49,11 @@
         </div>
 
         <div class="room-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px;">
-
-            <div class="room-card" th:each="game : ${waitingGames}" style="background: rgba(0, 0, 0, 0.4); border-radius: 0; padding: 18px; border: 1px solid rgba(76, 175, 80, 0.3);">
+            <div class="room-card" th:each="game : ${waitingGames}" style="background: rgba(0, 0, 0, 0.4); border-radius: 0; padding: 18px; border: 1px solid rgba(76, 175, 80, 0.3); position: relative;">
+                <div style="position: absolute; top: 18px; right: 18px; font-size: 12px; font-weight: bold; padding: 4px 8px; border: 1px solid; letter-spacing: 1px;"
+                     th:styleappend="${game.status.name() == 'WAITING'} ? 'color: #4caf50; border-color: #4caf50;' : 'color: #f44336; border-color: #f44336;'"
+                     th:text="${game.status.name() == 'WAITING' ? '1/2' : '2/2'}">
+                </div>
                 <div class="room-info" style="margin-bottom: 15px;">
                     <div style="font-size: 13px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
                         CHỦ PHÒNG
@@ -62,7 +65,7 @@
                         CHẾ ĐỘ: <span th:text="${game.gameMode}" style="color: #ccc;">PLAYER_VS_PLAYER</span>
                     </div>
                 </div>
-                <form th:action="@{/game/join}" method="post" style="margin: 0;">
+                <form th:if="${game.status.name() == 'WAITING'}" th:action="@{/game/join}" method="post" style="margin: 0;">
                     <input type="hidden" name="gameId" th:value="${game.id}">
                     <button type="submit" style="width: 100%; background-color: transparent; color: #4caf50; border: 1px solid #4caf50; border-radius: 0; padding: 10px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.2s ease;"
                             onmouseover="this.style.backgroundColor='#4caf50'; this.style.color='#fff';"
@@ -70,8 +73,10 @@
                         VÀO CHƠI
                     </button>
                 </form>
+                <div th:if="${game.status.name() == 'IN_PROGRESS'}" style="width: 100%; background-color: rgba(255,255,255,0.05); color: #888; border: 1px solid #555; border-radius: 0; padding: 10px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-align: center; box-sizing: border-box; cursor: not-allowed;">
+                    ĐANG CHƠI
+                </div>
             </div>
-
             <div th:if="${#lists.isEmpty(waitingGames)}" style="color: #888; padding: 40px 20px; text-align: center; background: rgba(0, 0, 0, 0.2); border-radius: 0; grid-column: 1 / -1; border: 1px solid rgba(255,255,255,0.1); text-transform: uppercase; letter-spacing: 1px; font-size: 13px;">
                 Chưa có phòng nào. Hãy là người đầu tiên tạo phòng.
             </div>
@@ -98,21 +103,19 @@
     var currentUsername = /*[[${currentPlayer != null ? currentPlayer.username : 'guest'}]]*/ 'guest';
     currentUsername = String(currentUsername).trim();
     /*]]>*/
-
     document.addEventListener("DOMContentLoaded", function () {
         var socket = new SockJS('/ws');
         var stompClient = Stomp.over(socket);
         stompClient.debug = null;
-
         stompClient.connect({}, function (frame) {
             stompClient.subscribe('/topic/lobby', function (message) {
                 const payload = message.body;
-                if (payload.includes(":")) {
-                    const parts = payload.split(":");
-                    const actorName = parts[1].trim();
+                if (payload.startsWith("RELOAD_LOBBY:")) {
+                    const actorName = payload.split(":")[1].trim();
                     if (actorName !== currentUsername) {
-                        window.location.href = window.location.href;
+                        window.location.reload();
                     }
+                    return;
                 }
             });
         }, function(error) {

@@ -5,6 +5,8 @@
     --text-color: #ffffff;
     --input-bg: #2c3e47;
     --border-color: #3d515a;
+    --neon-green: #4caf50;
+    --neon-green-glow: rgba(76, 175, 80, 0.6);
 }
 
 body {
@@ -96,4 +98,119 @@ input {
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+.profile-info {
+    text-align: center;
+}
+
+.avatar-circle {
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-item strong {
+    display: block;
+}
+
+.stat-item span {
+    font-size: 0.85rem;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.profile-container {
+    max-width: 500px !important;
+    padding: 3rem !important;
+}
+
+.avatar-circle.neon {
+    background: transparent;
+    border: 3px solid var(--neon-green);
+    box-shadow: 0 0 15px var(--neon-green-glow), inset 0 0 15px var(--neon-green-glow);
+    color: var(--text-color);
+    text-shadow: 0 0 10px var(--neon-green);
+    width: 120px;
+    height: 120px;
+    font-size: 3rem;
+}
+
+.neon-text {
+    color: #fff;
+    text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 20px;
+}
+
+.stats.neon {
+    border-top: 1px solid var(--neon-green);
+    border-bottom: 1px solid var(--neon-green);
+    background: rgba(76, 175, 80, 0.05);
+    padding: 20px 0;
+    box-shadow: inset 0 0 15px var(--neon-green-glow);
+    border-radius: 8px;
+}
+
+.stat-item strong.neon-green {
+    color: var(--neon-green);
+    text-shadow: 0 0 8px var(--neon-green-glow);
+    font-size: 1.5rem;
+}
+
+.btn-neon-logout {
+    width: 200px;
+    margin: 0 auto 15px auto;
+    padding: 15px;
+    background: transparent;
+    border: 1px solid #f44336;
+    border-radius: 5px;
+    color: #f44336;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+    display: block;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-neon-logout:hover {
+    background: rgba(244, 67, 54, 0.1);
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+}
+
+.link-neon-back {
+    display: block;
+    margin-top: 20px;
+    color: var(--neon-green);
+    text-decoration: none;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.link-neon-back:hover {
+    color: #fff;
+    text-shadow: 0 0 8px var(--neon-green-glow);
 }
