@@ -25,4 +25,7 @@ public class Player {
     private String password;
     private int eloRating = 1200;
     private LocalDateTime createdAt;
+
+    private boolean isActive = true;
+    private String role = "ROLE_USER";
 }

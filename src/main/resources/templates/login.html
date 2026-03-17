@@ -17,6 +17,10 @@
         <span th:text="${error}"></span>
     </div>
 
+    <div th:if="${param.error != null and #strings.equals(param.error, 'banned')}" style="color: #f44336; background: rgba(244, 67, 54, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(244, 67, 54, 0.3); text-align: center; font-weight: bold;">
+        ⚠️ Tài khoản của bạn đã bị khóa!
+    </div>
+
     <form th:action="@{/login}" method="post" id="loginForm">
         <div class="form-group">
             <label for="username">Tên đăng nhập</label>
