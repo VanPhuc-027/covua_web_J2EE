@@ -64,6 +64,12 @@ public class GameStateCache {
         return System.currentTimeMillis() - e.lastAccessMs > TTL_MS;
     }
 
+    /** Xóa game khỏi cache khi trận đấu kết thúc */
+    public void evict(String gameId) {
+        cache.remove(gameId);
+        locks.remove(gameId);
+    }
+
     public static final class Entry {
         public final String gameId;
         public String fen;

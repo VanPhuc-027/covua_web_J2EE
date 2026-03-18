@@ -62,6 +62,22 @@ document.addEventListener("DOMContentLoaded", function () {
         overlay.style.pointerEvents = "auto";
     };
 
+    window.scheduleReturnToLobby = function(delaySec) {
+        let remaining = delaySec || 5;
+        const msgEl = document.getElementById("game-modal-message");
+        const baseMsg = msgEl ? msgEl.innerText : "";
+        const timer = setInterval(() => {
+            remaining--;
+            if (msgEl) {
+                msgEl.innerHTML = baseMsg + `<br><br><span style="color:#aaa; font-size:13px;">Chuyển về sảnh sau <b style='color:#fff'>${remaining}s</b>...</span>`;
+            }
+            if (remaining <= 0) {
+                clearInterval(timer);
+                window.location.href = "/";
+            }
+        }, 1000);
+    };
+
     squares.forEach(sq => {
         const r = sq.dataset.row;
         const c = sq.dataset.col;
@@ -339,7 +355,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${payload.message}</span>`;
                 }
                 let icon = payload.action === 'TIMEOUT' ? "⏰" : (payload.action === 'RESIGN' ? "🏳️" : "🤝");
-                window.showModal(icon, "Kết thúc trận đấu", payload.message, "alert");
+                window.showModal(icon, "Kết thúc trận đấu", payload.message, "alert", () => window.location.href = "/");
+                window.scheduleReturnToLobby(5);
                 if (window.timerInterval) clearInterval(window.timerInterval);
                 // Khóa bàn cờ
                 clearHighlights();
@@ -356,7 +373,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (statusSpan) {
                 statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">CHIẾU HẾT! Cờ ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} thắng.</span>`;
             }
-            window.showModal("🏆", "Chiếu hết!", `Đội ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} giành chiến thắng!`, "alert");
+            if (window.timerInterval) clearInterval(window.timerInterval);
+            window.showModal("🏆", "Chiếu hết!", `Đội ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} giành chiến thắng!`, "alert", () => window.location.href = "/");
+            window.scheduleReturnToLobby(5);
         } else if (payload.check) {
             if (statusSpan) {
                 statusSpan.innerHTML = `<span style="color: #ffaa00; font-weight: bold; animation: pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>`;

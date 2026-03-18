@@ -77,6 +77,9 @@ public class GameConnectionService {
         if (gameOpt.isEmpty()) return;
         Game game = gameOpt.get();
 
+        // Nếu game đã kết thúc rồi thì không xử lý nữa
+        if (game.getStatus() == com.group18.chessgame.enums.GameStatus.FINISHED) return;
+
         String abandonedPlayerColor = null;
         if (game.getWhitePlayer() != null && game.getWhitePlayer().getUsername().equals(abandoningUsername)) {
             abandonedPlayerColor = "WHITE";
@@ -87,7 +90,7 @@ public class GameConnectionService {
         if (abandonedPlayerColor != null) {
             String winner = abandonedPlayerColor.equals("WHITE") ? "BLACK" : "WHITE";
             GameResponse response = new GameResponse(true, "Đối thủ ngắt kết nối. Bạn đã thắng!", null);
-            response.setAction("RESIGN"); // or TIMEOUT
+            response.setAction("RESIGN");
             response.setWinner(winner);
             response.setActionPlayer(abandonedPlayerColor);
             response.setMessage("Người chơi " + abandoningUsername + " ngắt kết nối quá 30s. " + (winner.equals("WHITE") ? "Trắng" : "Đen") + " thắng!");

@@ -2,6 +2,9 @@ package com.group18.chessgame.service;
 
 import com.group18.chessgame.dto.GameResponse;
 import com.group18.chessgame.dto.MoveRequest;
+import com.group18.chessgame.enums.GameResult;
+import com.group18.chessgame.enums.GameStatus;
+import com.group18.chessgame.enums.GameTermination;
 import com.group18.chessgame.enums.PieceColor;
 import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Game;
@@ -24,6 +27,7 @@ public class GameLogicService {
 
     private final GameRepository gameRepository;
     private final GameStateCache gameStateCache;
+    private final GameService gameService;
 
     // Truyền thêm gameId vào để biết đánh trận nào
     public GameResponse makeMove(String gameId, MoveRequest move) {
@@ -106,6 +110,10 @@ public class GameLogicService {
             }
             if (isCheckmate) {
                 response.setWinner(currentTurn.toString());
+                // Hủy phòng - đánh dấu game kết thúc
+                GameResult result = (currentTurn == PieceColor.WHITE) ? GameResult.WHITE_WINS : GameResult.BLACK_WINS;
+                gameService.finishGame(gameId, result, GameTermination.CHECKMATE);
+                gameStateCache.evict(gameId);
             }
             return response;
         } finally {
@@ -224,6 +232,11 @@ public class GameLogicService {
             if (gameOpt.isEmpty()) return new GameResponse(false, "Game not found", null);
             Game game = gameOpt.get();
             
+            // Không xử lý nếu game đã kết thúc
+            if (game.getStatus() == GameStatus.FINISHED) {
+                return new GameResponse(false, "Game already finished", entry.board);
+            }
+
             boolean isWhite = game.getWhitePlayer() != null && game.getWhitePlayer().getId() == player.getId();
             boolean isBlack = game.getBlackPlayer() != null && game.getBlackPlayer().getId() == player.getId();
             if (!isWhite && !isBlack) return new GameResponse(false, "Not a player in this game.", null);
@@ -237,18 +250,29 @@ public class GameLogicService {
             switch (action) {
                 case "RESIGN":
                     response.setWinner(isWhite ? "BLACK" : "WHITE");
-                    response.setMessage("Người chơi " + player.getUsername() + " đã đầu hàng.");
+                    response.setMessage("Đấu thủ " + player.getUsername() + " đã đầu hàng.");
+                    gameService.finishGame(gameId,
+                        isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
+                        GameTermination.RESIGNATION);
+                    gameStateCache.evict(gameId);
                     break;
                 case "OFFER_DRAW":
-                    response.setMessage("Người chơi " + player.getUsername() + " muốn cầu hòa.");
+                    // Chỉ thông báo, không kết thúc game
+                    response.setMessage("Đấu thủ " + player.getUsername() + " muốn cầu hòa.");
                     break;
                 case "ACCEPT_DRAW":
                     response.setWinner("DRAW");
                     response.setMessage("Trận đấu hòa vì hai bên đồng ý.");
+                    gameService.finishGame(gameId, GameResult.DRAW, GameTermination.AGREEMENT);
+                    gameStateCache.evict(gameId);
                     break;
                 case "TIMEOUT":
                     response.setWinner(isWhite ? "BLACK" : "WHITE");
-                    response.setMessage("Người chơi " + player.getUsername() + " đã hết thời gian.");
+                    response.setMessage("Đấu thủ " + player.getUsername() + " đã hết thời gian.");
+                    gameService.finishGame(gameId,
+                        isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
+                        GameTermination.TIMEOUT);
+                    gameStateCache.evict(gameId);
                     break;
             }
             return response;
