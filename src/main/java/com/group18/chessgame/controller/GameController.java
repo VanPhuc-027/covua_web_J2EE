@@ -26,7 +26,8 @@ public class GameController {
         GameResponse response = gameLogicService.makeMove(gameId, moveRequest);
 
         if (response.isSuccess()) {
-            simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, "BOARD_UPDATED");
+            // Push the new state directly to all clients to avoid an extra /board fetch (and DB hit).
+            simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, response);
         }
 
         return response;
@@ -44,5 +45,24 @@ public class GameController {
     @GetMapping("/{gameId}/board")
     public Board getBoard(@PathVariable String gameId) {
         return gameLogicService.getBoard(gameId);
+    }
+
+    @PostMapping("/{gameId}/action")
+    public GameResponse action(
+            @PathVariable String gameId,
+            @RequestBody com.group18.chessgame.dto.GameActionRequest request,
+            jakarta.servlet.http.HttpSession session) {
+
+        com.group18.chessgame.model.Player player = com.group18.chessgame.utils.SessionUtils.getCurrentPlayer(session);
+        if (player == null) {
+            return new GameResponse(false, "Player not authenticated", null);
+        }
+
+        GameResponse response = gameLogicService.handleAction(gameId, request.getAction(), player);
+        if (response.isSuccess()) {
+            simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, response);
+        }
+
+        return response;
     }
 }

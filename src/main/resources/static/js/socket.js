@@ -10,12 +10,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.stompClient.connect({}, function (frame) {
         window.stompClient.subscribe('/topic/game/' + gameId, function (message) {
+            // Server can send either a plain string event or a JSON payload (GameResponse).
             if (message.body === "PLAYER_JOINED") {
                 window.location.reload();
-            } else if (message.body === "BOARD_UPDATED") {
-                if (typeof window.fetchAndRenderBoard === 'function') {
-                    window.fetchAndRenderBoard();
+                return;
+            }
+
+            try {
+                const payload = JSON.parse(message.body);
+                if (payload && payload.success && payload.board) {
+                    if (typeof window.renderBoardFromResponse === "function") {
+                        window.renderBoardFromResponse(payload.board);
+                    } else if (typeof window.fetchAndRenderBoard === 'function') {
+                        // Fallback for older pages.
+                        window.fetchAndRenderBoard();
+                    }
+                    if (typeof window.handleCheckStatus === "function") {
+                        window.handleCheckStatus(payload);
+                    }
+                    return;
                 }
+            } catch (e) {
+                // Not JSON, ignore.
             }
         });
         window.stompClient.subscribe('/topic/game/' + window.CURRENT_GAME_ID + '/chat', function (message) {

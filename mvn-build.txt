@@ -1,0 +1,40 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.group18:chessgame >------------------------
+[INFO] Building chessgame 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ chessgame ---
+[INFO] Deleting C:\Users\ADMIN\IdeaProjects\covua_web_J2EE\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ chessgame ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 23 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ chessgame ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 43 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/ADMIN/IdeaProjects/covua_web_J2EE/src/main/java/com/group18/chessgame/service/GameLogicService.java:[227,93] long cannot be dereferenced
+[ERROR] /C:/Users/ADMIN/IdeaProjects/covua_web_J2EE/src/main/java/com/group18/chessgame/service/GameLogicService.java:[228,93] long cannot be dereferenced
+[INFO] 2 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.364 s
+[INFO] Finished at: 2026-03-18T13:33:15+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project chessgame: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/ADMIN/IdeaProjects/covua_web_J2EE/src/main/java/com/group18/chessgame/service/GameLogicService.java:[227,93] long cannot be dereferenced
+[ERROR] /C:/Users/ADMIN/IdeaProjects/covua_web_J2EE/src/main/java/com/group18/chessgame/service/GameLogicService.java:[228,93] long cannot be dereferenced
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

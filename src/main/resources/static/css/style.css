@@ -326,6 +326,14 @@ body {
     padding: 15px;
 }
 
+.chessboard.flipped {
+    transform: rotate(180deg);
+}
+
+.chessboard.flipped .square img {
+    transform: rotate(180deg);
+}
+
 .row {
     display: flex;
 }
@@ -714,4 +722,21 @@ input:checked + .slider:before {
 .btn-submit-settings:hover {
     background-color: rgba(76, 175, 80, 0.1);
     box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+}
+
+/* =========================================
+   CHECK / CHECKMATE EFFECTS
+========================================= */
+.checked-king {
+    outline: 3px solid #ff4444;
+    box-shadow: inset 0 0 25px rgba(255, 0, 0, 0.8);
+    background-color: rgba(255, 0, 0, 0.4) !important;
+    border-radius: 6px;
+    animation: pulse-check 1.5s infinite;
+}
+
+@keyframes pulse-check {
+    0% { box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.6); }
+    50% { box-shadow: inset 0 0 35px rgba(255, 0, 0, 0.9); outline-width: 4px; }
+    100% { box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.6); }
 }
