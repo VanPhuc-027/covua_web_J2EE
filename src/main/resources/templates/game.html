@@ -31,13 +31,13 @@
             <a th:href="@{/register}" class="btn-register">Đăng ký</a>
         </div>
 
-        <a th:href="@{/profile}" class="user-profile" th:if="${currentPlayer != null}" style="text-decoration: none; color: inherit;">
+        <div class="user-profile" th:if="${currentPlayer != null}" style="text-decoration: none; color: inherit; cursor: default;">
             <div class="info">
                 <span class="name" th:text="${currentPlayer.username}">Tên người dùng</span>
                 <span class="elo" th:text="${currentPlayer.eloRating} + ' Elo'">1200 Elo</span>
             </div>
             <div class="avatar" style="font-size: 24px;">👤</div>
-        </a>
+        </div>
     </div>
 </header>
 
@@ -45,9 +45,9 @@
     <div class="board-container" style="position: relative;">
 
         <div th:if="${game.status.name() == 'WAITING'}" class="waiting-overlay">
-            <h2 style="color: #4caf50; margin-bottom: 10px;">⏳ Đang chờ đối thủ...</h2>
-            <p>Mã phòng: <span style="font-family: monospace;" th:text="${game.id}"></span></p>
-            <p style="font-size: 13px; color: #aaa; margin-top: 15px;">(Bạn có thể về sảnh, phòng sẽ không bị mất)</p>
+            <h2 style="color: #4caf50; margin: 0; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);">
+                ⏳ Đang chờ đối thủ...
+            </h2>
         </div>
 
         <div class="chessboard">
