@@ -70,7 +70,7 @@
                 <div class="avatar">🤖</div>
                 <div class="details">
                     <span class="name" th:text="${game.whitePlayer != null and game.whitePlayer.username != currentPlayer.username ? game.whitePlayer.username : (game.blackPlayer != null and game.blackPlayer.username != currentPlayer.username ? game.blackPlayer.username : 'Đang đợi đối thủ...')}">Đối thủ</span>
-                    <span class="time">10:00</span>
+                    <span class="time" id="timer-opponent">30s</span>
                 </div>
             </div>
             <div class="match-status">
@@ -80,9 +80,14 @@
                 <div class="avatar">👤</div>
                 <div class="details">
                     <span class="name" th:text="${currentPlayer != null ? currentPlayer.username : 'Bạn'}">Bạn</span>
-                    <span class="time">10:00</span>
+                    <span class="time" id="timer-you">30s</span>
                 </div>
             </div>
+        </div>
+
+        <div class="game-actions" th:if="${game.status.name() != 'WAITING'}" style="display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <button id="btn-draw" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #607d8b; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🤝 Cầu hòa</button>
+            <button id="btn-resign" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #f44336; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🏳️ Đầu hàng</button>
         </div>
 
         <div class="move-history">
@@ -111,12 +116,51 @@
     </aside>
 </main>
 
+<div class="game-modal-overlay" id="game-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;">
+    <div class="game-modal" style="background: linear-gradient(135deg, #2b2b3c, #1a1a2e); padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; max-width: 400px; width: 90%; transform: translateY(-20px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+        <div class="game-modal-icon" id="game-modal-icon" style="font-size: 48px; margin-bottom: 15px;">🏆</div>
+        <div class="game-modal-title" id="game-modal-title" style="font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #fff;">Thông báo</div>
+        <div class="game-modal-message" id="game-modal-message" style="font-size: 16px; margin-bottom: 25px; color: #ccc; line-height: 1.5;">Nội dung</div>
+        <div class="game-modal-buttons" style="display: flex; gap: 15px; justify-content: center;">
+            <button class="game-modal-btn" id="game-modal-btn-cancel" style="padding: 10px 20px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; min-width: 100px; background: #f44336; color: white; display: none;">Từ chối</button>
+            <button class="game-modal-btn" id="game-modal-btn-confirm" style="padding: 10px 20px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; min-width: 100px; background: #4CAF50; color: white; display: none;">Đồng ý</button>
+            <button class="game-modal-btn" id="game-modal-btn-ok" style="padding: 10px 20px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; min-width: 100px; background: #4CAF50; color: white; display: none;">OK</button>
+        </div>
+    </div>
+</div>
+
+<div class="game-modal-overlay" id="promotion-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 1100;">
+    <div class="promotion-modal" style="background: #2b2b3c; padding: 25px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); max-width: 500px;">
+        <h3 style="color: #fff; margin-bottom: 20px;">Chọn quân phong cấp</h3>
+        <div class="promotion-options" style="display: flex; gap: 15px; justify-content: center;">
+            <button class="promo-btn" data-piece="queen" style="background: #444; border: none; padding: 15px; border-radius: 12px; cursor: pointer; transition: transform 0.2s;">
+                <img style="width: 50px; height: 50px;" id="promo-img-queen" src="">
+                <div style="color: #ccc; margin-top: 5px; font-size: 12px;">Hậu</div>
+            </button>
+            <button class="promo-btn" data-piece="rook" style="background: #444; border: none; padding: 15px; border-radius: 12px; cursor: pointer; transition: transform 0.2s;">
+                <img style="width: 50px; height: 50px;" id="promo-img-rook" src="">
+                <div style="color: #ccc; margin-top: 5px; font-size: 12px;">Xe</div>
+            </button>
+            <button class="promo-btn" data-piece="bishop" style="background: #444; border: none; padding: 15px; border-radius: 12px; cursor: pointer; transition: transform 0.2s;">
+                <img style="width: 50px; height: 50px;" id="promo-img-bishop" src="">
+                <div style="color: #ccc; margin-top: 5px; font-size: 12px;">Tượng</div>
+            </button>
+            <button class="promo-btn" data-piece="knight" style="background: #444; border: none; padding: 15px; border-radius: 12px; cursor: pointer; transition: transform 0.2s;">
+                <img style="width: 50px; height: 50px;" id="promo-img-knight" src="">
+                <div style="color: #ccc; margin-top: 5px; font-size: 12px;">Mã</div>
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 <script th:inline="javascript">
     window.CURRENT_GAME_ID = /*[[${game.id}]]*/ 'default_id';
     window.CURRENT_USERNAME = /*[[${currentPlayer != null ? currentPlayer.username : 'guest'}]]*/ 'guest';
+    window.WHITE_PLAYER = /*[[${game.whitePlayer != null ? game.whitePlayer.username : ''}]]*/ '';
+    window.BLACK_PLAYER = /*[[${game.blackPlayer != null ? game.blackPlayer.username : ''}]]*/ '';
 </script>
 
 <script th:src="@{/js/socket.js}"></script>

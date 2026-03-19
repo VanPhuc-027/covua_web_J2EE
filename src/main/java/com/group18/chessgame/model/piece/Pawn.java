@@ -43,9 +43,15 @@ public class Pawn extends Piece {
 
         // ăn chéo
         if (Math.abs(startCol - endCol) == 1 &&
-                endRow == startRow + direction &&
-                end.getPiece() != null) {
-            return true;
+                endRow == startRow + direction) {
+            // Ăn quân bình thường
+            if (end.getPiece() != null) {
+                return true;
+            }
+            // Bắt tốt qua đường (En Passant)
+            if (end == board.getEnPassantTarget()) {
+                return true;
+            }
         }
 
         return false;

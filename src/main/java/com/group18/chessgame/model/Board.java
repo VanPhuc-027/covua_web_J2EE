@@ -3,10 +3,14 @@ package com.group18.chessgame.model;
 import com.group18.chessgame.enums.PieceColor;
 import com.group18.chessgame.model.piece.*;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class Board {
     final private Spot[][] boxes = new Spot[8][8];
+    private Spot enPassantTarget = null;
+
     public Board(){
         this.resetBoard();
     }
@@ -37,6 +41,7 @@ public class Board {
         boxes[0][4].setPiece(new King(PieceColor.BLACK));
         boxes[7][3].setPiece(new Queen(PieceColor.WHITE));
         boxes[7][4].setPiece(new King(PieceColor.WHITE));
+        this.enPassantTarget = null;
     }
 
     public Spot getSpot(int row, int col) {
@@ -51,7 +56,24 @@ public class Board {
     }
 
     public void movePiece(Spot start, Spot end) {
+        movePiece(start, end, true);
+    }
+
+    public void movePiece(Spot start, Spot end, boolean isRealMove) {
         Piece piece = start.getPiece();
+        if (piece != null) {
+            if (isRealMove) {
+                // Handle En Passant capture logic
+                if (piece instanceof Pawn && end == enPassantTarget) {
+                    int direction = (piece.getColor() == PieceColor.WHITE) ? 1 : -1;
+                    Spot capturedPawnSpot = getSpot(end.getRow() + direction, end.getCol());
+                    if (capturedPawnSpot != null) {
+                        capturedPawnSpot.setPiece(null);
+                    }
+                }
+                piece.setHasMoved(true);
+            }
+        }
         end.setPiece(piece);
         start.setPiece(null);
     }
