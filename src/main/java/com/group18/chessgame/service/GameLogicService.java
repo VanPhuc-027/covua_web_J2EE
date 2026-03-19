@@ -10,7 +10,7 @@ import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
 import com.group18.chessgame.model.Spot;
-import com.group18.chessgame.model.piece.Piece;
+import com.group18.chessgame.model.piece.*;
 import com.group18.chessgame.repository.GameRepository;
 import com.group18.chessgame.utils.FenUtils;
 import lombok.RequiredArgsConstructor;
@@ -69,13 +69,46 @@ public class GameLogicService {
                 return new GameResponse(false, "Invalid move for " + piece.getName(), board);
             }
 
+            // Kiểm tra thêm cho nhập thành: không được băng qua ô bị chiếu
+            if (piece instanceof King && Math.abs(fromCol - toCol) == 2) {
+                if (isKingInCheck(board, currentTurn)) {
+                    return new GameResponse(false, "Cannot castle while in check", board);
+                }
+                int step = (toCol > fromCol) ? 1 : -1;
+                Spot intermediateSpot = board.getSpot(fromRow, fromCol + step);
+                // Giả lập đi 1 ô để check
+                board.movePiece(start, intermediateSpot, false);
+                boolean throughCheck = isKingInCheck(board, currentTurn);
+                board.movePiece(intermediateSpot, start, false); // undo
+                if (throughCheck) {
+                    return new GameResponse(false, "Cannot castle through check", board);
+                }
+            }
+
             // Không cho phép đi nước làm vua mình bị chiếu
             if (movePutsKingInCheck(board, start, end, currentTurn)) {
                 return new GameResponse(false, "Move leaves king in check", board);
             }
 
             // 3. Thực hiện nước đi trên bàn cờ (cached)
+            
+            // Xử lý di chuyển xe khi nhập thành
+            if (piece instanceof King && Math.abs(fromCol - toCol) == 2) {
+                int rookFromCol = (toCol > fromCol) ? 7 : 0;
+                int rookToCol = (toCol > fromCol) ? 5 : 3;
+                Spot rookStart = board.getSpot(fromRow, rookFromCol);
+                Spot rookEnd = board.getSpot(fromRow, rookToCol);
+                board.movePiece(rookStart, rookEnd);
+            }
+
+            // Cập nhật enPassantTarget cho lượt sau
+            Spot nextEnPassantTarget = null;
+            if (piece instanceof Pawn && Math.abs(fromRow - toRow) == 2) {
+                nextEnPassantTarget = board.getSpot((fromRow + toRow) / 2, fromCol);
+            }
+
             board.movePiece(start, end);
+            board.setEnPassantTarget(nextEnPassantTarget);
 
             // 4. Đổi lượt và kiểm tra trạng thái mới
             PieceColor nextTurn = (currentTurn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
@@ -189,13 +222,31 @@ public class GameLogicService {
     }
 
     public boolean movePutsKingInCheck(Board board, Spot start, Spot end, PieceColor color) {
+        Piece piece = start.getPiece();
         Piece captured = end.getPiece();
+        Spot eps = board.getEnPassantTarget();
+        
+        // Handle En Passant simulation
+        Piece epCaptured = null;
+        Spot epCapturedSpot = null;
+        if (piece instanceof Pawn && end == eps) {
+            int dir = (color == PieceColor.WHITE) ? 1 : -1;
+            epCapturedSpot = board.getSpot(end.getRow() + dir, end.getCol());
+            if (epCapturedSpot != null) {
+                epCaptured = epCapturedSpot.getPiece();
+                epCapturedSpot.setPiece(null);
+            }
+        }
+
         // simulate move
-        board.movePiece(start, end);
+        board.movePiece(start, end, false);
         boolean inCheck = isKingInCheck(board, color);
         // undo move
-        board.movePiece(end, start);
+        board.movePiece(end, start, false);
         end.setPiece(captured);
+        if (epCapturedSpot != null) {
+            epCapturedSpot.setPiece(epCaptured);
+        }
         return inCheck;
     }
 
