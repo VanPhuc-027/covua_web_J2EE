@@ -11,12 +11,17 @@ import com.group18.chessgame.repository.GameRepository;
 import com.group18.chessgame.repository.PlayerRepository;
 import com.group18.chessgame.utils.FenUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import com.group18.chessgame.dto.GameHistoryDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -117,6 +122,44 @@ public class GameService {
 
     public List<Game> getWaitingGame() {
         return gameRepository.findByStatusIn(Arrays.asList(GameStatus.WAITING, GameStatus.IN_PROGRESS));
+    }
+
+    public Page<GameHistoryDTO> getGameHistory(long playerId, Pageable pageable) {
+        Page<Game> gamesPage = gameRepository.findGameHistory(playerId, pageable);
+        List<GameHistoryDTO> dtos = gamesPage.getContent().stream().map(game -> {
+            boolean isWhite = game.getWhitePlayer().getId() == playerId;
+            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Unknown")
+                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Unknown");
+            int eloChange = isWhite ? game.getWhiteEloChange() : game.getBlackEloChange();
+
+            String outcome;
+            if (game.getResult() == GameResult.DRAW) {
+                outcome = "Hòa";
+            } else if ((isWhite && game.getResult() == GameResult.WHITE_WINS) ||
+                       (!isWhite && game.getResult() == GameResult.BLACK_WINS)) {
+                outcome = "Thắng";
+            } else {
+                outcome = "Thua";
+            }
+
+            return GameHistoryDTO.builder()
+                    .gameId(game.getId())
+                    .startedAt(game.getStartedAt())
+                    .finishedAt(game.getFinishedAt())
+                    .result(outcome)
+                    .opponentName(opponentName)
+                    .eloChange(eloChange)
+                    .build();
+        }).collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, gamesPage.getTotalElements());
+    }
+
+    public long getTotalWins(long playerId) {
+        return gameRepository.countWins(playerId);
+    }
+
+    public long getTotalLosses(long playerId) {
+        return gameRepository.countLosses(playerId);
     }
 
     public void removeGame(String gameId) {
