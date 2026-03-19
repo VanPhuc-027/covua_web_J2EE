@@ -8,12 +8,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
-    private final OnlineUserInterceptor onlineUserInterceptor;
+    private final AdminInterceptor adminInterceptor;
+    private final BanCheckInterceptor banCheckInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(onlineUserInterceptor)
+        registry.addInterceptor(banCheckInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/webjars/**", "/ws/**");
+                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/webjars/**", "/ws/**", "/login", "/register");
+
+        registry.addInterceptor(adminInterceptor)
+                .addPathPatterns("/admin/**");
     }
 }

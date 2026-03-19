@@ -7,57 +7,52 @@
 </head>
 <body>
 
-<div class="settings-wrapper">
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="lobby-content admin-content">
     <div class="settings-box">
 
-        <h2 style="color: #fff; text-shadow: 0 0 10px #4caf50; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; font-size: 2rem;">
-            CÀI ĐẶT
-        </h2>
+        <div class="settings-header">
+            <h3>CÀI ĐẶT HỆ THỐNG</h3>
+        </div>
 
-        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #3d515a; margin-bottom: 25px;">
-
-            <div class="setting-item">
-                <div class="setting-label">
-                    Âm thanh ván cờ
-                    <span class="setting-desc">Phát tiếng khi di chuyển hoặc ăn quân</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="toggleSound">
-                    <span class="slider"></span>
-                </label>
+        <div class="setting-item">
+            <div class="setting-label">
+                Âm thanh ván cờ
+                <span class="setting-desc">Phát tiếng khi di chuyển hoặc ăn quân</span>
             </div>
+            <label class="switch">
+                <input type="checkbox" id="toggleSound">
+                <span class="slider"></span>
+            </label>
+        </div>
 
-            <div class="setting-item">
-                <div class="setting-label">
-                    Hiển thị gợi ý
-                    <span class="setting-desc">Đánh dấu các ô hợp lệ khi bấm vào quân cờ</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="toggleHints">
-                    <span class="slider"></span>
-                </label>
+        <div class="setting-item">
+            <div class="setting-label">
+                Hiển thị gợi ý
+                <span class="setting-desc">Đánh dấu các ô hợp lệ khi bấm vào quân cờ</span>
             </div>
+            <label class="switch">
+                <input type="checkbox" id="toggleHints">
+                <span class="slider"></span>
+            </label>
+        </div>
 
-            <div class="setting-item" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-                <div class="setting-label">
-                    Chế độ tập trung
-                    <span class="setting-desc">Làm mờ nền xung quanh bàn cờ</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="toggleFocus">
-                    <span class="slider"></span>
-                </label>
+        <div class="setting-item" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+            <div class="setting-label">
+                Chế độ tập trung
+                <span class="setting-desc">Làm mờ nền xung quanh bàn cờ</span>
             </div>
-
+            <label class="switch">
+                <input type="checkbox" id="toggleFocus">
+                <span class="slider"></span>
+            </label>
         </div>
 
         <button onclick="saveSettings()" class="btn-submit-settings">LƯU CÀI ĐẶT</button>
 
-        <a th:href="@{/}" style="display: block; margin-top: 20px; color: #4caf50; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; transition: all 0.2s;" onmouseover="this.style.textShadow='0 0 8px rgba(76, 175, 80, 0.6)'" onmouseout="this.style.textShadow='none'">
-            ← Quay lại bàn cờ
-        </a>
     </div>
-</div>
+</main>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -82,14 +77,11 @@
         const btn = document.querySelector('.btn-submit-settings');
         const originalText = btn.innerText;
         btn.innerText = "ĐÃ LƯU ✓";
-        btn.style.backgroundColor = "#4caf50";
-        btn.style.color = "#fff";
-        btn.style.textShadow = "none";
+        btn.style.backgroundColor = "#45a049";
 
         setTimeout(() => {
             btn.innerText = originalText;
-            btn.style.backgroundColor = "transparent";
-            btn.style.color = "#4caf50";
+            btn.style.backgroundColor = "";
         }, 1500);
     }
 </script>

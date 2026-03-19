@@ -76,29 +76,4 @@ public class AuthController {
         session.invalidate();
         return "redirect:/login";
     }
-
-    @GetMapping("/")
-    public String showLobbyPage(Model model, HttpSession session) {
-        Player user = (Player) session.getAttribute("currentPlayer");
-        if (user == null) return "redirect:/login";
-        model.addAttribute("currentPlayer", user);
-        model.addAttribute("waitingGames", gameService.getWaitingGame());
-        model.addAttribute("topPlayers", playerService.getTopPlayers());
-        model.addAttribute("onlineUsers", ActiveUserListener.getActiveSessionCount());
-        return "index";
-    }
-
-    @GetMapping("/profile")
-    public String showProfilePage(Model model, HttpSession session) {
-        Player user = (Player) session.getAttribute("currentPlayer");
-        if (user == null) return "redirect:/login";
-
-        model.addAttribute("currentPlayer", user);
-        return "profile";
-    }
-
-    @GetMapping("/settings")
-    public String showSettingsPage() {
-        return "settings";
-    }
 }
