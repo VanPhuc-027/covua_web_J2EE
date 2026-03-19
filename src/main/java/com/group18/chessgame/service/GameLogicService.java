@@ -110,6 +110,21 @@ public class GameLogicService {
             board.movePiece(start, end);
             board.setEnPassantTarget(nextEnPassantTarget);
 
+            // Xử lý phong quân (Promotion)
+            if (piece instanceof Pawn) {
+                if ((currentTurn == PieceColor.WHITE && toRow == 0) ||
+                    (currentTurn == PieceColor.BLACK && toRow == 7)) {
+                    String promo = move.getPromotion() != null ? move.getPromotion().toLowerCase() : "queen";
+                    Piece newPiece = switch (promo) {
+                        case "rook" -> new Rook(currentTurn);
+                        case "bishop" -> new Bishop(currentTurn);
+                        case "knight" -> new Knight(currentTurn);
+                        default -> new Queen(currentTurn);
+                    };
+                    end.setPiece(newPiece);
+                }
+            }
+
             // 4. Đổi lượt và kiểm tra trạng thái mới
             PieceColor nextTurn = (currentTurn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
 
@@ -300,15 +315,17 @@ public class GameLogicService {
             
             switch (action) {
                 case "RESIGN":
-                    response.setWinner(isWhite ? "BLACK" : "WHITE");
-                    response.setMessage("Đấu thủ " + player.getUsername() + " đã đầu hàng.");
+                    String winnerColor = isWhite ? "BLACK" : "WHITE";
+                    String winnerName = isWhite ? game.getBlackPlayer().getUsername() : game.getWhitePlayer().getUsername();
+                    response.setWinner(winnerColor);
+                    response.setMessage("Đấu thủ " + player.getUsername() + " đã đầu hàng. " + 
+                                       (winnerColor.equals("WHITE") ? "Quân Trắng" : "Quân Đen") + " (" + winnerName + ") thắng!");
                     gameService.finishGame(gameId,
                         isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
                         GameTermination.RESIGNATION);
                     gameStateCache.evict(gameId);
                     break;
                 case "OFFER_DRAW":
-                    // Chỉ thông báo, không kết thúc game
                     response.setMessage("Đấu thủ " + player.getUsername() + " muốn cầu hòa.");
                     break;
                 case "ACCEPT_DRAW":
@@ -317,9 +334,15 @@ public class GameLogicService {
                     gameService.finishGame(gameId, GameResult.DRAW, GameTermination.AGREEMENT);
                     gameStateCache.evict(gameId);
                     break;
+                case "DECLINE_DRAW":
+                    response.setMessage("Đấu thủ " + player.getUsername() + " đã từ chối lời mời cầu hòa.");
+                    break;
                 case "TIMEOUT":
-                    response.setWinner(isWhite ? "BLACK" : "WHITE");
-                    response.setMessage("Đấu thủ " + player.getUsername() + " đã hết thời gian.");
+                    String tWinnerColor = isWhite ? "BLACK" : "WHITE";
+                    String tWinnerName = isWhite ? game.getBlackPlayer().getUsername() : game.getWhitePlayer().getUsername();
+                    response.setWinner(tWinnerColor);
+                    response.setMessage("Đấu thủ " + player.getUsername() + " đã hết thời gian. " + 
+                                       (tWinnerColor.equals("WHITE") ? "Quân Trắng" : "Quân Đen") + " (" + tWinnerName + ") thắng!");
                     gameService.finishGame(gameId,
                         isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
                         GameTermination.TIMEOUT);
