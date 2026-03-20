@@ -196,18 +196,21 @@ document.addEventListener("DOMContentLoaded", function () {
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
         if (!myColor) return false;
 
-        // Kiểm tra phong quân
+        // 1. Nhận diện quân đang đi
         const square = squareByPos.get(`${fromRow},${fromCol}`);
         const img = square.querySelector("img");
-        // Kiểm tra đúng là quân tốt của mình
         const isPawn = img && img.getAttribute("src").toLowerCase().includes("pawn");
+        const targetSquare = squareByPos.get(`${toRow},${toCol}`);
+        let isCapture = targetSquare && targetSquare.querySelector("img") !== null;
+        if (isPawn && fromCol !== toCol && !isCapture) {
+            isCapture = true;
+        }
+        // Kiểm tra phong quân
         const isLastRank = (myColor === "WHITE" && parseInt(toRow) === 0) || (myColor === "BLACK" && parseInt(toRow) === 7);
-
         if (isPawn && isLastRank && !promotion) {
             showPromotionModal(fromRow, fromCol, toRow, toCol);
             return false;
         }
-
         try {
             const res = await fetch(`/api/game/${gameId}/move`, {
                 method: "POST",
@@ -223,10 +226,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await res.json();
             if (data?.success) {
+                console.log("--- KẾT QUẢ TỪ BACKEND TRẢ VỀ ---", data);
                 renderBoardFromResponse(data.board);
-                const targetSquare = squareByPos.get(`${toRow},${toCol}`);
-                const isCapture = targetSquare && targetSquare.querySelector("img") !== null;
                 playMoveSound(false, promotion !== null, isCapture, false);
+
                 if (typeof window.handleCheckStatus === "function") {
                     window.handleCheckStatus(data);
                 }
