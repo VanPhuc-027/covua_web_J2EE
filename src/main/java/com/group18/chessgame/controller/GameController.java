@@ -42,6 +42,11 @@ public class GameController {
         return gameLogicService.getValidMoves(gameId, row, col);
     }
 
+    @GetMapping("/{gameId}/state")
+    public GameResponse getGameState(@PathVariable String gameId) {
+        return gameLogicService.getGameState(gameId);
+    }
+
     @GetMapping("/{gameId}/board")
     public Board getBoard(@PathVariable String gameId) {
         return gameLogicService.getBoard(gameId);

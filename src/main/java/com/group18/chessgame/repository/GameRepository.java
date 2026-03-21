@@ -23,7 +23,8 @@ public interface GameRepository extends JpaRepository<Game, String> {
     @Query("update Game g set g.currentFen = :fen, g.currentTurn = :turn where g.id = :gameId")
     int updateGameState(@Param("gameId") String gameId, @Param("fen") String fen, @Param("turn") PieceColor turn);
 
-    @Query("SELECT g FROM Game g WHERE (g.whitePlayer.id = :playerId OR g.blackPlayer.id = :playerId) AND g.status = 'FINISHED' ORDER BY g.finishedAt DESC")
+    @Query(value = "SELECT g FROM Game g LEFT JOIN FETCH g.whitePlayer LEFT JOIN FETCH g.blackPlayer WHERE (g.whitePlayer.id = :playerId OR g.blackPlayer.id = :playerId) AND g.status = 'FINISHED' ORDER BY g.finishedAt DESC",
+           countQuery = "SELECT COUNT(g) FROM Game g WHERE (g.whitePlayer.id = :playerId OR g.blackPlayer.id = :playerId) AND g.status = 'FINISHED'")
     Page<Game> findGameHistory(@Param("playerId") long playerId, Pageable pageable);
 
     @Query("SELECT COUNT(g) FROM Game g WHERE ((g.whitePlayer.id = :playerId AND g.result = com.group18.chessgame.enums.GameResult.WHITE_WINS) OR (g.blackPlayer.id = :playerId AND g.result = com.group18.chessgame.enums.GameResult.BLACK_WINS))")

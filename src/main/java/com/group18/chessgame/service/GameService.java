@@ -29,6 +29,7 @@ public class GameService {
     private final GameRepository gameRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final GameStateCache gameStateCache;
 
     public Game createGame(Player creator, GameMode gameMode) {
         Game game = new Game (
@@ -38,6 +39,10 @@ public class GameService {
         );
         game.setCurrentFen(FenUtils.boardToFen(new Board()));
         Game savedGame = gameRepository.save(game);
+        
+        // Cache eagerly to completely bypass DB queries for the subsequent `/state` fetch
+        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(), new java.util.ArrayList<>());
+        
         messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:" + creator.getUsername());
         return savedGame;
     }
