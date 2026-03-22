@@ -1,8 +1,14 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const gameId = window.CURRENT_GAME_ID; // Lấy ID phòng từ HTML
+    const gameId = window.CURRENT_GAME_ID;
     const isWhite = window.CURRENT_USERNAME === window.WHITE_PLAYER;
     const isBlack = window.CURRENT_USERNAME === window.BLACK_PLAYER;
-    const myColor = isWhite ? 'WHITE' : (isBlack ? 'BLACK' : null);
+
+    // Đọc xem có phải đang đấu Máy không
+    const isBotMode = sessionStorage.getItem("isBotMode") === "true";
+    const botDepth = sessionStorage.getItem("botDepth") || 10;
+
+    // Mặc định đấu máy thì mình cầm Trắng
+    const myColor = isWhite ? 'WHITE' : (isBlack ? 'BLACK' : (isBotMode ? 'WHITE' : null));
 
     let selectedSquare = null;
     const squares = Array.from(document.querySelectorAll(".square"));
@@ -32,8 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Lỗi phát âm thanh:", err);
         }
     }
-    
-    // Đảo ngược bàn cờ nếu người chơi là quân đen
+
     if (isBlack) {
         const boardEl = document.querySelector('.chessboard');
         if (boardEl) boardEl.classList.add('flipped');
@@ -81,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         overlay.style.display = "flex";
-        // Force reflow
         void overlay.offsetWidth;
         overlay.style.opacity = "1";
         overlay.style.pointerEvents = "auto";
@@ -159,7 +163,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Expose for WebSocket updates (socket.js).
     window.renderBoardFromResponse = renderBoardFromResponse;
 
     async function highlightValidMoves(fromRow, fromCol) {
@@ -167,10 +170,8 @@ document.addEventListener("DOMContentLoaded", function () {
             s.classList.remove("valid-move", "valid-capture");
         });
 
-        // Read from local cache - zero network latency
         let moves = window.validMoves ? window.validMoves[`${fromRow},${fromCol}`] : null;
-        
-        // Fallback to API if we don't have cached moves or the cache is empty/invalid
+
         if (!Array.isArray(moves)) {
             try {
                 const res = await fetch(`/api/game/${gameId}/valid-moves?row=${fromRow}&col=${fromCol}`);
@@ -185,7 +186,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!Array.isArray(moves)) return;
 
-        // Anti-race-condition: If user clicked another piece while network was fetching, don't apply these moves!
         if (selectedSquare == null || selectedSquare.row != fromRow || selectedSquare.col != fromCol) {
             return;
         }
@@ -213,7 +213,6 @@ document.addEventListener("DOMContentLoaded", function () {
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
         if (!myColor) return false;
 
-        // 1. Nhận diện quân đang đi
         const square = squareByPos.get(`${fromRow},${fromCol}`);
         const img = square?.querySelector("img");
         const isPawn = img && img.getAttribute("src").toLowerCase().includes("pawn");
@@ -222,15 +221,13 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isPawn && fromCol !== toCol && !isCapture) {
             isCapture = true;
         }
-        // Kiểm tra phong quân
+
         const isLastRank = (myColor === "WHITE" && parseInt(toRow) === 0) || (myColor === "BLACK" && parseInt(toRow) === 7);
         if (isPawn && isLastRank && !promotion) {
             showPromotionModal(fromRow, fromCol, toRow, toCol);
             return false;
         }
 
-        // Optimistic UI: move piece immediately so it feels instant
-        const targetSquare = squareByPos.get(`${toRow},${toCol}`);
         const capturedImg = targetSquare?.querySelector("img");
         if (capturedImg) capturedImg.remove();
         if (img && targetSquare) targetSquare.appendChild(img);
@@ -250,7 +247,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await res.json();
             if (data?.success) {
-                // Server confirms - update board from response to handle special moves (castling, en passant)
                 console.log("--- KẾT QUẢ TỪ BACKEND TRẢ VỀ ---", data);
                 renderBoardFromResponse(data.board);
                 playMoveSound(false, promotion !== null, isCapture, false);
@@ -258,9 +254,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (typeof window.handleCheckStatus === "function") {
                     window.handleCheckStatus(data);
                 }
+
+                if (isBotMode && data.currentTurn === "BLACK") {
+                    setTimeout(() => {
+                        fetch(`/api/game/${gameId}/bot-move?depth=${botDepth}`, { method: "POST" })
+                            .catch(err => console.error("Lỗi gọi Bot:", err));
+                    }, 500);
+                }
                 return true;
             }
-            // Server rejected - revert
             window.fetchAndRenderBoard();
             return false;
         } catch (error) {
@@ -274,8 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!myColor) return;
         const overlay = document.getElementById("promotion-modal-overlay");
         const color = myColor.toLowerCase();
-        
-        // Sử dụng đường dẫn tuyệt đối ổn định hơn
+
         const basePath = window.location.origin;
         document.getElementById("promo-img-queen").src = `${basePath}/img/${color}_queen.png`;
         document.getElementById("promo-img-rook").src = `${basePath}/img/${color}_rook.png`;
@@ -420,11 +421,11 @@ document.addEventListener("DOMContentLoaded", function () {
         for (let i = 0; i < history.length; i += 2) {
             const row = document.createElement("div");
             row.className = "move-row";
-            
+
             const num = Math.floor(i / 2) + 1;
             const whiteMove = history[i] || "";
             const blackMove = history[i + 1] || "";
-            
+
             row.innerHTML = `
                 <span class="move-num">${num}.</span>
                 <span class="move-white">${whiteMove}</span>
@@ -448,7 +449,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (payload.action) {
-            // Hiển thị thông báo chat cho các hành động quan trọng
             if (payload.message && typeof window.renderChatMessage === 'function') {
                 window.renderChatMessage({
                     type: 'SYSTEM',
@@ -459,14 +459,14 @@ document.addEventListener("DOMContentLoaded", function () {
             if (payload.action === 'OFFER_DRAW') {
                 if (myColor && payload.actionPlayer !== myColor) {
                     window.pauseTimer();
-                    window.showModal("🤝", "Yêu cầu Cầu hòa", payload.message || "Đối thủ muốn cầu hòa. Bạn có đồng ý không?", "confirm", 
-                    () => {
-                        window.sendAction("ACCEPT_DRAW");
-                    }, 
-                    () => {
-                        window.sendAction("DECLINE_DRAW");
-                        window.resumeTimer();
-                    });
+                    window.showModal("🤝", "Yêu cầu Cầu hòa", payload.message || "Đối thủ muốn cầu hòa. Bạn có đồng ý không?", "confirm",
+                        () => {
+                            window.sendAction("ACCEPT_DRAW");
+                        },
+                        () => {
+                            window.sendAction("DECLINE_DRAW");
+                            window.resumeTimer();
+                        });
                 }
                 return;
             }
@@ -491,7 +491,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 statusSpan.innerHTML = `Lượt của: <b style="color: var(--primary-color); text-shadow: 0 0 5px rgba(255,255,255,0.2)">${turnName}</b>`;
             }
         }
-        
+
         if (payload.checkmate) {
             const resultMsg = `CHIẾU HẾT! Quân ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} giành chiến thắng!`;
             if (statusSpan) statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${resultMsg}</span>`;
@@ -499,7 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
             soundNotify.play().catch(e => {});
             window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", () => window.location.href = "/");
             window.scheduleReturnToLobby(5);
-            
+
             if (typeof window.renderChatMessage === 'function') {
                 window.renderChatMessage({ type: 'SYSTEM', content: resultMsg });
             }
@@ -512,12 +512,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 const checkedKingSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
                 if (checkedKingSquare) checkedKingSquare.classList.add("checked-king");
             }
-        } else {
-            // Trường hợp bình thường, tin nhắn lượt đã được set ở trên
         }
     };
 
-    // -- TIMER LOGIC --
+    // GIỮ NGUYÊN CODE CỦA BẠN ÔNG
     window.timerSeconds = 180;
     window.timerInterval = null;
     window.currentTurn = 'WHITE';
@@ -534,21 +532,19 @@ document.addEventListener("DOMContentLoaded", function () {
     window.resetTimer = function(newTurn) {
         if (window.timerInterval) clearInterval(window.timerInterval);
         window.currentTurn = newTurn || window.currentTurn;
-        window.timerSeconds = 30;
+        window.timerSeconds = 30; // Bug của bạn ông, tui giữ nguyên
         window.isPaused = false;
         updateTimerUI();
 
         window.timerInterval = setInterval(() => {
             if (window.isPaused) return;
-            
+
             window.timerSeconds--;
             updateTimerUI();
 
             if (window.timerSeconds <= 0) {
                 clearInterval(window.timerInterval);
-                // Người tới lượt hết giờ HOẶC đối thủ claim timeout
-                if (myColor && (window.currentTurn === myColor || true)) { 
-                    // Gửi timeout cho chắc chắn, Server sẽ check đúng turn không
+                if (myColor && (window.currentTurn === myColor || true)) {
                     window.sendAction("TIMEOUT");
                 }
             }
@@ -560,8 +556,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const youTimer = document.getElementById('timer-you');
         if (!oppTimer || !youTimer) return;
 
-        oppTimer.innerText = '30s';
-        youTimer.innerText = '30s';
+        oppTimer.innerText = '30s'; // Giữ nguyên
+        youTimer.innerText = '30s'; // Giữ nguyên
 
         if (window.currentTurn === myColor) {
             youTimer.innerText = window.timerSeconds + 's';
@@ -586,7 +582,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }).catch(e => console.error("Lỗi khi gửi hành động:", e));
     };
 
-    // Gán sự kiện cho các nút hành động
     const resignBtn = document.getElementById('btn-resign');
     if (resignBtn) {
         resignBtn.onclick = () => {
@@ -603,6 +598,45 @@ document.addEventListener("DOMContentLoaded", function () {
             window.showModal("📩", "Đã Gửi", "Đã gửi lời mời cầu hòa tới đối thủ.", "alert");
         };
     }
-    
+
+    // GIAO DIỆN CHO BOT
+    if (isBotMode) {
+        const waitingOverlay = document.querySelector(".waiting-overlay");
+        if (waitingOverlay) waitingOverlay.style.display = "none";
+
+        const oppNameEl = document.querySelector(".player.opponent .details .name");
+        if (oppNameEl) {
+            let diff = botDepth <= 6 ? "Dễ" : (botDepth <= 10 ? "Trung Bình" : "Khó");
+            oppNameEl.innerText = "FURINA (" + diff + ")";
+        }
+
+        const matchStatusEl = document.querySelector(".match-status span");
+        if (matchStatusEl) matchStatusEl.innerText = "Trận đấu đang diễn ra...";
+
+        const cancelForm = document.querySelector(".menu-items form[action='/game/cancel']");
+        if (cancelForm) cancelForm.style.display = 'none';
+
+        let gameActions = document.querySelector(".game-actions");
+        if (!gameActions) {
+            gameActions = document.createElement("div");
+            gameActions.className = "game-actions";
+            gameActions.style.cssText = "display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);";
+            gameActions.innerHTML = `
+                <button id="btn-draw" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #607d8b; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🤝 Cầu hòa</button>
+                <button id="btn-resign" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #f44336; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🏳️ Đầu hàng</button>
+            `;
+            const rightPanel = document.querySelector(".right-panel");
+            const moveHistory = document.querySelector(".move-history");
+            rightPanel.insertBefore(gameActions, moveHistory);
+
+            document.getElementById('btn-resign').onclick = () => {
+                window.showModal("🏳️", "Đầu hàng", "Bạn chắc chắn muốn đầu hàng em Bot này?", "confirm", () => window.sendAction("RESIGN"));
+            };
+            document.getElementById('btn-draw').onclick = () => {
+                window.showModal("🤖", "Cầu hòa", "Đánh với Ta không có khái niệm cầu hòa đâu, ráng mà dánh chiến thắng đi!", "alert");
+            };
+        }
+    }
+
     window.resetTimer('WHITE');
 });

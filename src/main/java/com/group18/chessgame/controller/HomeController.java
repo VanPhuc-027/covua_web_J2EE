@@ -2,7 +2,7 @@ package com.group18.chessgame.controller;
 
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
-import com.group18.chessgame.service.GameService;
+import com.group18.chessgame.service.GameLobbyService;
 import com.group18.chessgame.service.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -14,12 +14,12 @@ import java.util.List;
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
-    private final GameService gameService;
+    private final GameLobbyService gameLobbyService;
     private final PlayerService playerService;
 
     @GetMapping("/")
     public String showLobbyPage(Model model) {
-        List<Game> waitingGames = gameService.getWaitingGame();
+        List<Game> waitingGames = gameLobbyService.getWaitingGame();
         List<Player> topPlayers = playerService.getTopPlayers();
 
         model.addAttribute("waitingGames", waitingGames);
