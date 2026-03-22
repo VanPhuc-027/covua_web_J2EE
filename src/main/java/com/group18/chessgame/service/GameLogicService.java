@@ -19,9 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,8 +29,9 @@ public class GameLogicService {
 
     private final GameRepository gameRepository;
     private final GameStateCache gameStateCache;
-    private final GameService gameService;
+    private final GameLobbyService gameLobbyService;
     private final MoveRepository moveRepository;
+    private final StockfishApiService stockfishApiService;
 
     private String getAlgebraic(int row, int col) {
         return "" + (char) ('a' + col) + (8 - row);
@@ -155,7 +154,7 @@ public class GameLogicService {
 
             if (isCheckmate) {
                 response.setWinner(currentTurn.toString());
-                gameService.finishGame(gameId, (currentTurn == PieceColor.WHITE ? GameResult.WHITE_WINS : GameResult.BLACK_WINS), GameTermination.CHECKMATE);
+                gameLobbyService.finishGame(gameId, (currentTurn == PieceColor.WHITE ? GameResult.WHITE_WINS : GameResult.BLACK_WINS), GameTermination.CHECKMATE);
                 gameStateCache.evict(gameId);
             }
             return response;
@@ -362,11 +361,13 @@ public class GameLogicService {
             switch (action) {
                 case "RESIGN":
                     String winnerColor = isWhite ? "BLACK" : "WHITE";
-                    String winnerName = isWhite ? game.getBlackPlayer().getUsername() : game.getWhitePlayer().getUsername();
+                    String winnerName = isWhite ?
+                            (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Bot") :
+                            (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Bot");
                     response.setWinner(winnerColor);
                     response.setMessage("Đấu thủ " + player.getUsername() + " đã đầu hàng. " + 
                                        (winnerColor.equals("WHITE") ? "Quân Trắng" : "Quân Đen") + " (" + winnerName + ") thắng!");
-                    gameService.finishGame(gameId,
+                    gameLobbyService.finishGame(gameId,
                         isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
                         GameTermination.RESIGNATION);
                     gameStateCache.evict(gameId);
@@ -377,7 +378,7 @@ public class GameLogicService {
                 case "ACCEPT_DRAW":
                     response.setWinner("DRAW");
                     response.setMessage("Trận đấu hòa vì hai bên đồng ý.");
-                    gameService.finishGame(gameId, GameResult.DRAW, GameTermination.AGREEMENT);
+                    gameLobbyService.finishGame(gameId, GameResult.DRAW, GameTermination.AGREEMENT);
                     gameStateCache.evict(gameId);
                     break;
                 case "DECLINE_DRAW":
@@ -385,11 +386,13 @@ public class GameLogicService {
                     break;
                 case "TIMEOUT":
                     String tWinnerColor = isWhite ? "BLACK" : "WHITE";
-                    String tWinnerName = isWhite ? game.getBlackPlayer().getUsername() : game.getWhitePlayer().getUsername();
+                    String tWinnerName = isWhite ?
+                            (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Bot") :
+                            (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Bot");
                     response.setWinner(tWinnerColor);
                     response.setMessage("Đấu thủ " + player.getUsername() + " đã hết thời gian. " + 
                                        (tWinnerColor.equals("WHITE") ? "Quân Trắng" : "Quân Đen") + " (" + tWinnerName + ") thắng!");
-                    gameService.finishGame(gameId,
+                    gameLobbyService.finishGame(gameId,
                         isWhite ? GameResult.BLACK_WINS : GameResult.WHITE_WINS,
                         GameTermination.TIMEOUT);
                     gameStateCache.evict(gameId);
@@ -399,5 +402,51 @@ public class GameLogicService {
         } finally {
             lock.unlock();
         }
+    }
+
+    public GameResponse makeBotMove(String gameId, int depth) {
+        GameStateCache.Entry entry = gameStateCache.get(gameId).orElse(null);
+        if (entry == null) {
+            return new GameResponse(false, "Game not found", null);
+        }
+
+        String fenForApi = entry.fen;
+        if(!fenForApi.contains("")) {
+            String turnStr = (entry.currentTurn == PieceColor.WHITE) ? "w" : "b";
+            fenForApi += " " + turnStr + " KQkq - 0 1";
+        }
+
+        String bestMoveUci = stockfishApiService.getBestMoveFromApi(entry.fen, depth);
+        if (bestMoveUci == null) {
+            return new GameResponse(false, "Bot đang lag, không nghĩ ra nước đi", null);
+        }
+
+        int[] coords = parseUciToMove(bestMoveUci);
+        if (coords == null) return new GameResponse(false, "Lỗi dịch tọa độ", null);
+
+        MoveRequest botMove = new MoveRequest();
+        botMove.setFromRow(coords[0]);
+        botMove.setFromCol(coords[1]);
+        botMove.setToRow(coords[2]);
+        botMove.setToCol(coords[3]);
+
+        if (bestMoveUci.length() == 5) {
+            char promoChar = bestMoveUci.charAt(4);
+            String promo = "queen";
+            if (promoChar == 'r') promo = "rook";
+            else if (promoChar == 'b') promo = "bishop";
+            else if (promoChar == 'n') promo = "knight";
+            botMove.setPromotion(promo);
+        }
+        return this.makeMove(gameId, botMove);
+    }
+
+    private int[] parseUciToMove(String uciMove) {
+        if (uciMove == null || uciMove.length() < 4) return null;
+        int fromCol = uciMove.charAt(0) - 'a';
+        int toCol = uciMove.charAt(2) - 'a';
+        int fromRow = 8 - Character.getNumericValue(uciMove.charAt(1));
+        int toRow = 8 - Character.getNumericValue(uciMove.charAt(3));
+        return new int[]{fromRow, fromCol, toRow, toCol};
     }
 }

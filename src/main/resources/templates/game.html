@@ -64,8 +64,8 @@
         </div>
     </div>
 
-    <aside class="right-panel">
-        <div class="game-info">
+    <aside class="right-panel" style="display: flex; flex-direction: column;">
+        <div class="game-info" style="flex-shrink: 0;">
             <div class="player opponent">
                 <div class="avatar">🤖</div>
                 <div class="details">
@@ -85,26 +85,25 @@
             </div>
         </div>
 
-        <div class="game-actions" th:if="${game.status.name() != 'WAITING'}" style="display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div class="game-actions" th:if="${game.status.name() != 'WAITING'}" style="display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
             <button id="btn-draw" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #607d8b; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🤝 Cầu hòa</button>
             <button id="btn-resign" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #f44336; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🏳️ Đầu hàng</button>
         </div>
 
-        <div class="move-history">
-            <div class="history-header">Lịch sử nước đi</div>
-            <div class="moves-list">
-                <!-- Nước đi sẽ được hiển thị ở đây qua JavaScript -->
+        <div class="move-history" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+            <div class="history-header" style="flex-shrink: 0;">Lịch sử nước đi</div>
+            <div class="moves-list" style="flex: 1; overflow-y: auto;">
             </div>
         </div>
 
-        <div class="chat-box">
-            <div class="chat-header">Trò chuyện</div>
-            <div class="chat-messages" id="chat-messages">
+        <div class="chat-box" style="flex: 1.2; display: flex; flex-direction: column; min-height: 0;">
+            <div class="chat-header" style="flex-shrink: 0;">Trò chuyện</div>
+            <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto;">
                 <div class="message system" style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 10px;">
                     Chào mừng bạn đến với bàn cờ!
                 </div>
             </div>
-            <div class="chat-input">
+            <div class="chat-input" style="flex-shrink: 0;">
                 <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
                 <button id="btn-send-chat">Gửi</button>
             </div>

@@ -25,7 +25,7 @@ import com.group18.chessgame.dto.GameHistoryDTO;
 
 @Service
 @RequiredArgsConstructor
-public class GameService {
+public class GameLobbyService {
     private final GameRepository gameRepository;
     private final PlayerRepository playerRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -37,6 +37,7 @@ public class GameService {
                 null,
                 gameMode
         );
+        game.setStartedAt(java.time.LocalDateTime.now());
         game.setCurrentFen(FenUtils.boardToFen(new Board()));
         Game savedGame = gameRepository.save(game);
         
@@ -133,8 +134,8 @@ public class GameService {
         Page<Game> gamesPage = gameRepository.findGameHistory(playerId, pageable);
         List<GameHistoryDTO> dtos = gamesPage.getContent().stream().map(game -> {
             boolean isWhite = game.getWhitePlayer().getId() == playerId;
-            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Unknown")
-                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Unknown");
+            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Furina")
+                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Furina");
             int eloChange = isWhite ? game.getWhiteEloChange() : game.getBlackEloChange();
 
             String outcome;
