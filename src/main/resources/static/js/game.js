@@ -167,30 +167,47 @@ document.addEventListener("DOMContentLoaded", function () {
             s.classList.remove("valid-move", "valid-capture");
         });
 
-        try {
-            // Đã ghép gameId vào link
-            const res = await fetch(`/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`);
-            const moves = await res.json();
-
-            if (!Array.isArray(moves)) return;
-
-            moves.forEach(move => {
-                const r = move?.[0];
-                const c = move?.[1];
-                if (typeof r !== "number" || typeof c !== "number") return;
-
-                const target = squareByPos.get(`${r},${c}`);
-                if (!target) return;
-
-                if (isPieceSquare(target)) {
-                    target.classList.add("valid-capture");
-                } else {
-                    target.classList.add("valid-move");
+        // Read from local cache - zero network latency
+        let moves = window.validMoves ? window.validMoves[`${fromRow},${fromCol}`] : null;
+        
+        // Fallback to API if we don't have cached moves or the cache is empty/invalid
+        if (!Array.isArray(moves)) {
+            try {
+                const res = await fetch(`/api/game/${gameId}/valid-moves?row=${fromRow}&col=${fromCol}`);
+                if (res.ok) {
+                    moves = await res.json();
                 }
-            });
-        } catch (e) {
-            console.error("Failed to fetch valid moves:", e);
+            } catch (e) {
+                console.error("Failed to fetch valid moves from API:", e);
+                return;
+            }
         }
+
+        if (!Array.isArray(moves)) return;
+
+        // Anti-race-condition: If user clicked another piece while network was fetching, don't apply these moves!
+        if (selectedSquare == null || selectedSquare.row != fromRow || selectedSquare.col != fromCol) {
+            return;
+        }
+
+        squares.forEach(s => {
+            s.classList.remove("valid-move", "valid-capture");
+        });
+
+        moves.forEach(move => {
+            const r = move?.[0];
+            const c = move?.[1];
+            if (typeof r !== "number" || typeof c !== "number") return;
+
+            const target = squareByPos.get(`${r},${c}`);
+            if (!target) return;
+
+            if (isPieceSquare(target)) {
+                target.classList.add("valid-capture");
+            } else {
+                target.classList.add("valid-move");
+            }
+        });
     }
 
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
@@ -198,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 1. Nhận diện quân đang đi
         const square = squareByPos.get(`${fromRow},${fromCol}`);
-        const img = square.querySelector("img");
+        const img = square?.querySelector("img");
         const isPawn = img && img.getAttribute("src").toLowerCase().includes("pawn");
         const targetSquare = squareByPos.get(`${toRow},${toCol}`);
         let isCapture = targetSquare && targetSquare.querySelector("img") !== null;
@@ -211,6 +228,13 @@ document.addEventListener("DOMContentLoaded", function () {
             showPromotionModal(fromRow, fromCol, toRow, toCol);
             return false;
         }
+
+        // Optimistic UI: move piece immediately so it feels instant
+        const targetSquare = squareByPos.get(`${toRow},${toCol}`);
+        const capturedImg = targetSquare?.querySelector("img");
+        if (capturedImg) capturedImg.remove();
+        if (img && targetSquare) targetSquare.appendChild(img);
+
         try {
             const res = await fetch(`/api/game/${gameId}/move`, {
                 method: "POST",
@@ -226,6 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await res.json();
             if (data?.success) {
+                // Server confirms - update board from response to handle special moves (castling, en passant)
                 console.log("--- KẾT QUẢ TỪ BACKEND TRẢ VỀ ---", data);
                 renderBoardFromResponse(data.board);
                 playMoveSound(false, promotion !== null, isCapture, false);
@@ -235,11 +260,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 return true;
             }
-            alert(data?.message ?? "Move failed");
+            // Server rejected - revert
+            window.fetchAndRenderBoard();
             return false;
         } catch (error) {
             console.error("Error:", error);
-            alert("Network error");
+            window.fetchAndRenderBoard();
             return false;
         }
     }
@@ -316,12 +342,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.fetchAndRenderBoard = async function() {
         try {
-            const res = await fetch(`/api/game/${gameId}/board`);
+            const res = await fetch(`/api/game/${gameId}/state`);
             if (!res.ok) return;
-            const boardData = await res.json();
-            renderBoardFromResponse(boardData);
+            const data = await res.json();
+            if (data.board) {
+                renderBoardFromResponse(data.board);
+            }
+            if (typeof window.handleCheckStatus === "function") {
+                window.handleCheckStatus(data);
+            }
         } catch (e) {
-            console.error("Lỗi khi kéo bàn cờ mới:", e);
+            console.error("Lỗi khi kéo trạng thái game:", e);
         }
     };
 
@@ -381,9 +412,40 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     loadChatHistory();
 
+    function renderMoveHistory(history) {
+        const moveList = document.querySelector(".moves-list");
+        if (!moveList || !Array.isArray(history)) return;
+
+        moveList.innerHTML = "";
+        for (let i = 0; i < history.length; i += 2) {
+            const row = document.createElement("div");
+            row.className = "move-row";
+            
+            const num = Math.floor(i / 2) + 1;
+            const whiteMove = history[i] || "";
+            const blackMove = history[i + 1] || "";
+            
+            row.innerHTML = `
+                <span class="move-num">${num}.</span>
+                <span class="move-white">${whiteMove}</span>
+                <span class="move-black">${blackMove}</span>
+            `;
+            moveList.appendChild(row);
+        }
+        moveList.scrollTop = moveList.scrollHeight;
+    }
+
     window.handleCheckStatus = function(payload) {
         document.querySelectorAll(".square.checked-king").forEach(el => el.classList.remove("checked-king"));
         const statusSpan = document.querySelector(".match-status span");
+
+        if (payload.moveHistory) {
+            renderMoveHistory(payload.moveHistory);
+        }
+
+        if (payload.validMoves) {
+            window.validMoves = payload.validMoves;
+        }
 
         if (payload.action) {
             // Hiển thị thông báo chat cho các hành động quan trọng
@@ -423,6 +485,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (payload.currentTurn) {
             window.resetTimer(payload.currentTurn);
+            if (statusSpan && !payload.check && !payload.checkmate && !payload.action) {
+                const turnName = payload.currentTurn === 'WHITE' ? 'TRẮNG' : 'ĐEN';
+                const turnColor = payload.currentTurn === 'WHITE' ? '#fff' : '#aaa';
+                statusSpan.innerHTML = `Lượt của: <b style="color: var(--primary-color); text-shadow: 0 0 5px rgba(255,255,255,0.2)">${turnName}</b>`;
+            }
         }
         
         if (payload.checkmate) {
@@ -446,12 +513,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (checkedKingSquare) checkedKingSquare.classList.add("checked-king");
             }
         } else {
-            if (statusSpan && !payload.action) statusSpan.textContent = "Trận đấu đang diễn ra...";
+            // Trường hợp bình thường, tin nhắn lượt đã được set ở trên
         }
     };
 
     // -- TIMER LOGIC --
-    window.timerSeconds = 30;
+    window.timerSeconds = 180;
     window.timerInterval = null;
     window.currentTurn = 'WHITE';
     window.isPaused = false;

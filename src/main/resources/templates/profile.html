@@ -16,11 +16,11 @@
 
         <div class="stats flat-style">
             <div class="stat-item">
-                <strong class="text-primary">0</strong>
+                <strong class="text-primary" th:text="${totalWins}">0</strong>
                 <span>Thắng</span>
             </div>
             <div class="stat-item">
-                <strong class="text-primary">0</strong>
+                <strong class="text-primary" th:text="${totalLosses}">0</strong>
                 <span>Thua</span>
             </div>
             <div class="stat-item">
@@ -29,7 +29,57 @@
             </div>
         </div>
 
-        <a th:href="@{/logout}" class="btn-logout-flat">Đăng xuất</a>
+        <div class="game-history" style="margin-top: 2rem; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+            <h3 style="color: white; margin-bottom: 1rem; text-align: left; padding-left: 10px; border-left: 4px solid var(--primary-color);">Lịch sử ván đấu</h3>
+            <div style="overflow-x: auto; min-height: 350px;"> <!-- Fixed min-height to keep frame consistent -->
+                <table style="width: 100%; border-collapse: collapse; color: #ccc; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">ID</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Bắt đầu</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Kết thúc</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Đối thủ</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Kết quả</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Elo</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="game : ${gameHistory.content}" style="border-bottom: 1px solid #333;">
+                            <td style="padding: 12px;" th:text="${#strings.substring(game.gameId, 0, 8)} + '...'">ID</td>
+                            <td style="padding: 12px;" th:text="${#temporals.format(game.startedAt, 'dd/MM HH:mm')}">Start</td>
+                            <td style="padding: 12px;" th:text="${#temporals.format(game.finishedAt, 'dd/MM HH:mm')}">End</td>
+                            <td style="padding: 12px;" th:text="${game.opponentName}">Opponent</td>
+                            <td style="padding: 12px;">
+                                <span th:text="${game.result}"
+                                      th:style="'font-weight: bold; color: ' + (${game.result == 'Thắng'} ? '#4caf50' : (${game.result == 'Thua'} ? '#f44336' : '#ffeb3b'))">Result</span>
+                            </td>
+                            <td style="padding: 12px;">
+                                <span th:text="${(game.eloChange >= 0 ? '+' : '') + game.eloChange}"
+                                      th:style="'color: ' + (${game.eloChange >= 0} ? '#4caf50' : '#f44336')">Elo</span>
+                            </td>
+                            <td style="padding: 12px;">
+                                <a th:href="@{/game/replay/{id}(id=${game.gameId})}" style="color: #2196f3; text-decoration: none; font-weight: bold; font-size: 0.85rem; padding: 5px 10px; background: rgba(33,150,243,0.1); border-radius: 4px; border: 1px solid #2196f3;">D.lại</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${gameHistory.isEmpty()}">
+                            <td colspan="7" style="padding: 20px; text-align: center; color: #777;">Chưa có ván đấu nào</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div th:if="${gameHistory.totalPages > 1}" style="margin-top: 1.5rem; display: flex; justify-content: center; align-items: center; gap: 15px;">
+                <a th:if="${gameHistory.hasPrevious()}" th:href="@{/profile(page=${gameHistory.number - 1})}"
+                   style="color: var(--primary-color); text-decoration: none; font-weight: bold; padding: 5px 10px; border: 1px solid var(--primary-color); border-radius: 4px;">&larr; Trước</a>
+                <span style="color: #889296; font-size: 0.9rem;" th:text="${gameHistory.number + 1} + ' / ' + ${gameHistory.totalPages}">1 / 1</span>
+                <a th:if="${gameHistory.hasNext()}" th:href="@{/profile(page=${gameHistory.number + 1})}"
+                   style="color: var(--primary-color); text-decoration: none; font-weight: bold; padding: 5px 10px; border: 1px solid var(--primary-color); border-radius: 4px;">Sau &rarr;</a>
+            </div>
+        </div>
+
+        <a th:href="@{/logout}" class="btn-logout-flat" style="margin-top: 2rem;">Đăng xuất</a>
 
         <a th:href="@{/}" class="link-back-flat">
             ← Quay lại bàn cờ

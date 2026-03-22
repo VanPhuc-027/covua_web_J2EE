@@ -22,6 +22,8 @@ public class GameResponse {
     private String action;
     private String actionPlayer;
     private String currentTurn;
+    private java.util.List<String> moveHistory;
+    private java.util.Map<String, java.util.List<int[]>> validMoves;
 
     public GameResponse(boolean success, String message, Board board) {
         this.success = success;
