@@ -1,4 +1,4 @@
-body {
+    body {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -369,4 +369,14 @@ input:checked + .slider:before {
         height: auto;
         overflow-y: auto;
     }
+}
+body.focus-mode .lobby-content,
+body.focus-mode .fragments-navbar {
+    filter: grayscale(0.8) blur(2px);
+    transition: 0.5s;
+}
+
+body.focus-mode .game-container
+    filter: none !important;
+    z-index: 10;
 }

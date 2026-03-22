@@ -1,5 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const gameId = window.CURRENT_GAME_ID;
+    const config = window.CHESS_CONFIG || {};
+    const gameId = window.CURRENT_GAME_ID || config.gameId;
+    if (!window.CURRENT_GAME_ID && config.gameId) {
+        window.CURRENT_GAME_ID = config.gameId;
+    }
     if (!gameId || gameId === 'default_id') {
         console.error("Không lấy được ID phòng!");
         return;

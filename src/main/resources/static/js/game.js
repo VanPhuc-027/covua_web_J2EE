@@ -1,100 +1,371 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const gameId = window.CURRENT_GAME_ID; // Lấy ID phòng từ HTML
-    const isWhite = window.CURRENT_USERNAME === window.WHITE_PLAYER;
-    const isBlack = window.CURRENT_USERNAME === window.BLACK_PLAYER;
-    const myColor = isWhite ? 'WHITE' : (isBlack ? 'BLACK' : null);
+    const config = window.CHESS_CONFIG || {};
+    const gameId = window.CURRENT_GAME_ID || config.gameId || "default_id";
+    const currentUsername = window.CURRENT_USERNAME || config.username || "guest";
+    const whitePlayer = window.WHITE_PLAYER || "";
+    const blackPlayer = window.BLACK_PLAYER || "";
+    const isWhite = currentUsername === whitePlayer;
+    const isBlack = currentUsername === blackPlayer;
+    const myColor = isWhite ? "WHITE" : (isBlack ? "BLACK" : null);
+
+    if (!window.CURRENT_GAME_ID && config.gameId) {
+        window.CURRENT_GAME_ID = config.gameId;
+    }
+    if (!window.CURRENT_USERNAME && config.username) {
+        window.CURRENT_USERNAME = config.username;
+    }
 
     let selectedSquare = null;
     const squares = Array.from(document.querySelectorAll(".square"));
     const squareByPos = new Map();
 
-    const soundMove = new Audio('/sounds/move-self.mp3');
-    const soundCapture = new Audio('/sounds/capture.mp3');
-    const soundCheck = new Audio('/sounds/move-check.mp3');
-    const soundCastle = new Audio('/sounds/castle.mp3');
-    const soundPromote = new Audio('/sounds/promote.mp3');
-    const soundNotify = new Audio('/sounds/notify.mp3');
+    const sounds = {
+        move: new Audio("/sounds/move-self.mp3"),
+        capture: new Audio("/sounds/capture.mp3"),
+        check: new Audio("/sounds/move-check.mp3"),
+        castle: new Audio("/sounds/castle.mp3"),
+        promote: new Audio("/sounds/promote.mp3"),
+        notify: new Audio("/sounds/notify.mp3")
+    };
+
+    squares.forEach(function (square) {
+        const row = square.dataset.row;
+        const col = square.dataset.col;
+        if (row != null && col != null) {
+            squareByPos.set(`${row},${col}`, square);
+        }
+    });
+
+    function isSoundEnabled() {
+        return localStorage.getItem("chess_sound") !== "false";
+    }
+
+    function isHintsEnabled() {
+        return localStorage.getItem("chess_hints") !== "false";
+    }
+
+    function playAudio(audio) {
+        if (!audio || !isSoundEnabled()) {
+            return;
+        }
+        try {
+            audio.currentTime = 0;
+            audio.play().catch(function () {});
+        } catch (error) {
+            console.error("Loi phat am thanh:", error);
+        }
+    }
 
     function playMoveSound(isCheck, isPromote, isCapture, isCastle) {
-        try {
-            if (isCheck) {
-                soundCheck.play().catch(e => console.log(e));
-            } else if (isPromote) {
-                soundPromote.play().catch(e => console.log(e));
-            } else if (isCapture) {
-                soundCapture.play().catch(e => console.log(e));
-            } else if (isCastle) {
-                soundCastle.play().catch(e => console.log(e));
-            } else {
-                soundMove.play().catch(e => console.log(e));
+        if (isCheck) {
+            playAudio(sounds.check);
+            return;
+        }
+        if (isPromote) {
+            playAudio(sounds.promote);
+            return;
+        }
+        if (isCapture) {
+            playAudio(sounds.capture);
+            return;
+        }
+        if (isCastle) {
+            playAudio(sounds.castle);
+            return;
+        }
+        playAudio(sounds.move);
+    }
+
+    function getStatusSpan() {
+        return document.querySelector(".match-status span") || document.querySelector(".match-status");
+    }
+
+    function clearHighlights() {
+        squares.forEach(function (square) {
+            square.classList.remove("selected", "valid-move", "valid-capture", "hint", "checked-king");
+        });
+    }
+
+    function clearMoveHighlights() {
+        squares.forEach(function (square) {
+            square.classList.remove("selected", "valid-move", "valid-capture", "hint");
+        });
+    }
+
+    function isPieceSquare(squareEl) {
+        return !!(squareEl && squareEl.querySelector("img"));
+    }
+
+    function getSquarePieceColor(squareEl) {
+        const img = squareEl ? squareEl.querySelector("img") : null;
+        const src = img ? (img.getAttribute("src") || "").toLowerCase() : "";
+        if (src.includes("white_")) {
+            return "WHITE";
+        }
+        if (src.includes("black_")) {
+            return "BLACK";
+        }
+        return null;
+    }
+
+    function renderBoardFromResponse(board) {
+        const boxes = board && board.boxes;
+        if (!Array.isArray(boxes) || boxes.length !== 8) {
+            return;
+        }
+
+        for (let r = 0; r < 8; r += 1) {
+            if (!Array.isArray(boxes[r]) || boxes[r].length !== 8) {
+                continue;
             }
-        } catch (err) {
-            console.error("Lỗi phát âm thanh:", err);
+            for (let c = 0; c < 8; c += 1) {
+                const square = squareByPos.get(`${r},${c}`);
+                if (!square) {
+                    continue;
+                }
+
+                const piece = boxes[r][c] && boxes[r][c].piece ? boxes[r][c].piece : null;
+                const existingImg = square.querySelector("img");
+
+                if (!piece) {
+                    if (existingImg) {
+                        existingImg.remove();
+                    }
+                    continue;
+                }
+
+                if (existingImg) {
+                    if (existingImg.getAttribute("src") !== piece.iconPath) {
+                        existingImg.setAttribute("src", piece.iconPath);
+                    }
+                    if (!existingImg.classList.contains("chess-piece")) {
+                        existingImg.classList.add("chess-piece");
+                    }
+                } else {
+                    const img = document.createElement("img");
+                    img.src = piece.iconPath;
+                    img.alt = "chess-piece";
+                    img.classList.add("chess-piece");
+                    square.appendChild(img);
+                }
+            }
         }
     }
-    
-    // Đảo ngược bàn cờ nếu người chơi là quân đen
-    if (isBlack) {
-        const boardEl = document.querySelector('.chessboard');
-        if (boardEl) boardEl.classList.add('flipped');
-    }
 
-    window.showModal = function(icon, title, message, type, confirmCallback) {
-        const overlay = document.getElementById("game-modal-overlay");
-        if (!overlay) return;
+    window.renderBoardFromResponse = renderBoardFromResponse;
 
-        document.getElementById("game-modal-icon").innerText = icon;
-        document.getElementById("game-modal-title").innerText = title;
-        document.getElementById("game-modal-message").innerText = message;
+    async function highlightValidMoves(fromRow, fromCol) {
+        clearMoveHighlights();
 
-        const btnConfirm = document.getElementById("game-modal-btn-confirm");
-        const btnCancel = document.getElementById("game-modal-btn-cancel");
-        const btnOk = document.getElementById("game-modal-btn-ok");
-
-        const newConfirm = btnConfirm.cloneNode(true);
-        const newCancel = btnCancel.cloneNode(true);
-        const newOk = btnOk.cloneNode(true);
-
-        btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
-        btnCancel.parentNode.replaceChild(newCancel, btnCancel);
-        btnOk.parentNode.replaceChild(newOk, btnOk);
-
-        const closeModal = () => {
-            overlay.style.opacity = "0";
-            overlay.style.pointerEvents = "none";
-            setTimeout(() => overlay.style.display = "none", 300);
-        };
-
-        if (type === "confirm") {
-            newConfirm.style.display = "block";
-            newCancel.style.display = "block";
-            newOk.style.display = "none";
-
-            newConfirm.onclick = () => { closeModal(); if(confirmCallback) confirmCallback(); };
-            newCancel.onclick = () => { closeModal(); };
-        } else {
-            newConfirm.style.display = "none";
-            newCancel.style.display = "none";
-            newOk.style.display = "block";
-
-            newOk.onclick = () => { closeModal(); if(confirmCallback) confirmCallback(); };
+        const originSquare = squareByPos.get(`${fromRow},${fromCol}`);
+        if (originSquare) {
+            originSquare.classList.add("selected");
         }
 
+        if (!isHintsEnabled()) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`
+            );
+            if (!response.ok) {
+                return;
+            }
+
+            const moves = await response.json();
+            if (!Array.isArray(moves)) {
+                return;
+            }
+
+            moves.forEach(function (move) {
+                const row = move && move[0];
+                const col = move && move[1];
+                const target = squareByPos.get(`${row},${col}`);
+                if (!target) {
+                    return;
+                }
+
+                target.classList.add("hint");
+                if (isPieceSquare(target)) {
+                    target.classList.add("valid-capture");
+                } else {
+                    target.classList.add("valid-move");
+                }
+            });
+        } catch (error) {
+            console.error("Loi lay nuoc di hop le:", error);
+        }
+    }
+
+    function isCastlingMove(pieceImg, fromCol, toCol) {
+        const src = pieceImg ? (pieceImg.getAttribute("src") || "").toLowerCase() : "";
+        return src.includes("king") && Math.abs(Number(fromCol) - Number(toCol)) === 2;
+    }
+
+    async function movePiece(fromRow, fromCol, toRow, toCol, promotion) {
+        if (!myColor) {
+            return false;
+        }
+
+        const fromSquare = squareByPos.get(`${fromRow},${fromCol}`);
+        const pieceImg = fromSquare ? fromSquare.querySelector("img") : null;
+        if (!pieceImg) {
+            return false;
+        }
+
+        const pieceSrc = (pieceImg.getAttribute("src") || "").toLowerCase();
+        const isPawn = pieceSrc.includes("pawn");
+        const isCastle = isCastlingMove(pieceImg, fromCol, toCol);
+        const targetSquare = squareByPos.get(`${toRow},${toCol}`);
+
+        let isCapture = !!(targetSquare && targetSquare.querySelector("img"));
+        if (isPawn && Number(fromCol) !== Number(toCol) && !isCapture) {
+            isCapture = true;
+        }
+
+        const isLastRank =
+            (myColor === "WHITE" && Number(toRow) === 0) ||
+            (myColor === "BLACK" && Number(toRow) === 7);
+
+        if (isPawn && isLastRank && !promotion) {
+            showPromotionModal(fromRow, fromCol, toRow, toCol);
+            return false;
+        }
+
+        try {
+            const response = await fetch(`/api/game/${gameId}/move`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fromRow: Number(fromRow),
+                    fromCol: Number(fromCol),
+                    toRow: Number(toRow),
+                    toCol: Number(toCol),
+                    promotion: promotion || null
+                })
+            });
+
+            const data = await response.json();
+            if (!data || !data.success) {
+                alert((data && data.message) || "Nuoc di khong hop le");
+                return false;
+            }
+
+            renderBoardFromResponse(data.board);
+            playMoveSound(!!data.check, !!promotion, isCapture, isCastle);
+
+            if (typeof window.handleCheckStatus === "function") {
+                window.handleCheckStatus(data);
+            }
+
+            return true;
+        } catch (error) {
+            console.error("Loi di chuyen quan co:", error);
+            alert("Khong the ket noi toi may chu");
+            return false;
+        }
+    }
+
+    function closeOverlay(overlay) {
+        if (!overlay) {
+            return;
+        }
+        overlay.style.opacity = "0";
+        overlay.style.pointerEvents = "none";
+        setTimeout(function () {
+            overlay.style.display = "none";
+        }, 300);
+    }
+
+    function showOverlay(overlay) {
+        if (!overlay) {
+            return;
+        }
         overlay.style.display = "flex";
-        // Force reflow
         void overlay.offsetWidth;
         overlay.style.opacity = "1";
         overlay.style.pointerEvents = "auto";
+    }
+
+    window.showModal = function (icon, title, message, type, confirmCallback, cancelCallback) {
+        const overlay = document.getElementById("game-modal-overlay");
+        if (!overlay) {
+            if (message) {
+                alert(message);
+            }
+            return;
+        }
+
+        const iconEl = document.getElementById("game-modal-icon");
+        const titleEl = document.getElementById("game-modal-title");
+        const messageEl = document.getElementById("game-modal-message");
+        const confirmBtn = document.getElementById("game-modal-btn-confirm");
+        const cancelBtn = document.getElementById("game-modal-btn-cancel");
+        const okBtn = document.getElementById("game-modal-btn-ok");
+
+        if (!iconEl || !titleEl || !messageEl || !confirmBtn || !cancelBtn || !okBtn) {
+            alert(message || title || "Thong bao");
+            return;
+        }
+
+        iconEl.innerText = icon || "";
+        titleEl.innerText = title || "Thong bao";
+        messageEl.innerHTML = message || "";
+
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newOkBtn = okBtn.cloneNode(true);
+
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+        if (type === "confirm") {
+            newConfirmBtn.style.display = "block";
+            newCancelBtn.style.display = "block";
+            newOkBtn.style.display = "none";
+
+            newConfirmBtn.onclick = function () {
+                closeOverlay(overlay);
+                if (typeof confirmCallback === "function") {
+                    confirmCallback();
+                }
+            };
+
+            newCancelBtn.onclick = function () {
+                closeOverlay(overlay);
+                if (typeof cancelCallback === "function") {
+                    cancelCallback();
+                }
+            };
+        } else {
+            newConfirmBtn.style.display = "none";
+            newCancelBtn.style.display = "none";
+            newOkBtn.style.display = "block";
+            newOkBtn.onclick = function () {
+                closeOverlay(overlay);
+                if (typeof confirmCallback === "function") {
+                    confirmCallback();
+                }
+            };
+        }
+
+        showOverlay(overlay);
     };
 
-    window.scheduleReturnToLobby = function(delaySec) {
-        let remaining = delaySec || 5;
-        const msgEl = document.getElementById("game-modal-message");
-        const baseMsg = msgEl ? msgEl.innerText : "";
-        const timer = setInterval(() => {
-            remaining--;
-            if (msgEl) {
-                msgEl.innerHTML = baseMsg + `<br><br><span style="color:#aaa; font-size:13px;">Chuyển về sảnh sau <b style='color:#fff'>${remaining}s</b>...</span>`;
+    window.scheduleReturnToLobby = function (delaySec) {
+        let remaining = Number(delaySec) || 5;
+        const messageEl = document.getElementById("game-modal-message");
+        const baseMessage = messageEl ? messageEl.innerHTML : "";
+
+        const timer = setInterval(function () {
+            remaining -= 1;
+            if (messageEl) {
+                messageEl.innerHTML =
+                    `${baseMessage}<br><br><span style="color:#aaa;font-size:13px;">` +
+                    `Chuyen ve sanh sau <b style="color:#fff">${remaining}s</b>...</span>`;
             }
             if (remaining <= 0) {
                 clearInterval(timer);
@@ -103,319 +374,242 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 1000);
     };
 
-    squares.forEach(sq => {
-        const r = sq.dataset.row;
-        const c = sq.dataset.col;
-        if (r != null && c != null) {
-            squareByPos.set(`${r},${c}`, sq);
+    function showPromotionModal(fromRow, fromCol, toRow, toCol) {
+        if (!myColor) {
+            return;
         }
-    });
 
-    function clearHighlights() {
-        squares.forEach(s => {
-            s.classList.remove("selected", "valid-move", "valid-capture");
-        });
-    }
-
-    function isPieceSquare(squareEl) {
-        return !!squareEl.querySelector("img");
-    }
-
-    function renderBoardFromResponse(board) {
-        const boxes = board?.boxes;
-        if (!Array.isArray(boxes) || boxes.length !== 8) return;
-
-        for (let r = 0; r < 8; r++) {
-            const row = boxes[r];
-            if (!Array.isArray(row) || row.length !== 8) continue;
-
-            for (let c = 0; c < 8; c++) {
-                const spot = row[c];
-                const square = squareByPos.get(`${r},${c}`);
-                if (!square) continue;
-
-                const piece = spot?.piece ?? null;
-                const existingImg = square.querySelector("img");
-
-                if (!piece) {
-                    if (existingImg) existingImg.remove();
-                    continue;
-                }
-
-                const iconPath = piece.iconPath;
-                if (typeof iconPath !== "string" || iconPath.length === 0) continue;
-
-                if (existingImg) {
-                    if (existingImg.getAttribute("src") !== iconPath) {
-                        existingImg.setAttribute("src", iconPath);
-                    }
-                } else {
-                    const img = document.createElement("img");
-                    img.setAttribute("src", iconPath);
-                    img.setAttribute("alt", "chess-piece");
-                    square.appendChild(img);
-                }
-            }
-        }
-    }
-
-    // Expose for WebSocket updates (socket.js).
-    window.renderBoardFromResponse = renderBoardFromResponse;
-
-    async function highlightValidMoves(fromRow, fromCol) {
-        squares.forEach(s => {
-            s.classList.remove("valid-move", "valid-capture");
-        });
-
-        try {
-            // Đã ghép gameId vào link
-            const res = await fetch(`/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`);
-            const moves = await res.json();
-
-            if (!Array.isArray(moves)) return;
-
-            moves.forEach(move => {
-                const r = move?.[0];
-                const c = move?.[1];
-                if (typeof r !== "number" || typeof c !== "number") return;
-
-                const target = squareByPos.get(`${r},${c}`);
-                if (!target) return;
-
-                if (isPieceSquare(target)) {
-                    target.classList.add("valid-capture");
-                } else {
-                    target.classList.add("valid-move");
-                }
-            });
-        } catch (e) {
-            console.error("Failed to fetch valid moves:", e);
-        }
-    }
-
-    async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
-        if (!myColor) return false;
-
-        // 1. Nhận diện quân đang đi
-        const square = squareByPos.get(`${fromRow},${fromCol}`);
-        const img = square.querySelector("img");
-        const isPawn = img && img.getAttribute("src").toLowerCase().includes("pawn");
-        const targetSquare = squareByPos.get(`${toRow},${toCol}`);
-        let isCapture = targetSquare && targetSquare.querySelector("img") !== null;
-        if (isPawn && fromCol !== toCol && !isCapture) {
-            isCapture = true;
-        }
-        // Kiểm tra phong quân
-        const isLastRank = (myColor === "WHITE" && parseInt(toRow) === 0) || (myColor === "BLACK" && parseInt(toRow) === 7);
-        if (isPawn && isLastRank && !promotion) {
-            showPromotionModal(fromRow, fromCol, toRow, toCol);
-            return false;
-        }
-        try {
-            const res = await fetch(`/api/game/${gameId}/move`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fromRow: parseInt(fromRow),
-                    fromCol: parseInt(fromCol),
-                    toRow: parseInt(toRow),
-                    toCol: parseInt(toCol),
-                    promotion: promotion
-                })
-            });
-
-            const data = await res.json();
-            if (data?.success) {
-                console.log("--- KẾT QUẢ TỪ BACKEND TRẢ VỀ ---", data);
-                renderBoardFromResponse(data.board);
-                playMoveSound(false, promotion !== null, isCapture, false);
-
-                if (typeof window.handleCheckStatus === "function") {
-                    window.handleCheckStatus(data);
-                }
-                return true;
-            }
-            alert(data?.message ?? "Move failed");
-            return false;
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Network error");
-            return false;
-        }
-    }
-
-    function showPromotionModal(fR, fC, tR, tC) {
-        if (!myColor) return;
         const overlay = document.getElementById("promotion-modal-overlay");
+        if (!overlay) {
+            return;
+        }
+
         const color = myColor.toLowerCase();
-        
-        // Sử dụng đường dẫn tuyệt đối ổn định hơn
-        const basePath = window.location.origin;
-        document.getElementById("promo-img-queen").src = `${basePath}/img/${color}_queen.png`;
-        document.getElementById("promo-img-rook").src = `${basePath}/img/${color}_rook.png`;
-        document.getElementById("promo-img-bishop").src = `${basePath}/img/${color}_bishop.png`;
-        document.getElementById("promo-img-knight").src = `${basePath}/img/${color}_knight.png`;
+        const mapping = [
+            ["promo-img-queen", "queen"],
+            ["promo-img-rook", "rook"],
+            ["promo-img-bishop", "bishop"],
+            ["promo-img-knight", "knight"]
+        ];
+
+        mapping.forEach(function (entry) {
+            const img = document.getElementById(entry[0]);
+            if (img) {
+                img.src = `/img/${color}_${entry[1]}.png`;
+            }
+        });
 
         overlay.style.display = "flex";
 
-        const buttons = document.querySelectorAll(".promo-btn");
-        buttons.forEach(btn => {
-            btn.onclick = async () => {
-                const piece = btn.dataset.piece;
+        document.querySelectorAll(".promo-btn").forEach(function (button) {
+            button.onclick = async function () {
+                const piece = button.dataset.piece;
                 overlay.style.display = "none";
-                await movePiece(fR, fC, tR, tC, piece);
+                await movePiece(fromRow, fromCol, toRow, toCol, piece);
                 selectedSquare = null;
-                clearHighlights();
+                clearMoveHighlights();
             };
         });
     }
 
-    squares.forEach(square => {
-        square.addEventListener("click", async () => {
+    squares.forEach(function (square) {
+        square.addEventListener("click", async function () {
             const row = square.dataset.row;
             const col = square.dataset.col;
 
             if (!selectedSquare) {
-                if (!isPieceSquare(square)) return;
-                if (myColor) {
-                    const img = square.querySelector("img");
-                    const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-                    if (pieceColor !== myColor) return;
+                if (!isPieceSquare(square)) {
+                    return;
                 }
-                selectedSquare = {row, col};
-                square.classList.add("selected");
+
+                const pieceColor = getSquarePieceColor(square);
+                if (myColor && pieceColor !== myColor) {
+                    return;
+                }
+
+                selectedSquare = { row: row, col: col };
                 await highlightValidMoves(row, col);
-            } else {
-                if (selectedSquare.row === row && selectedSquare.col === col) {
-                    clearHighlights();
-                    selectedSquare = null;
-                    return;
-                }
-                if (!square.classList.contains("valid-move") && !square.classList.contains("valid-capture")) {
-                    if (isPieceSquare(square)) {
-                        if (myColor) {
-                            const img = square.querySelector("img");
-                            const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-                            if (pieceColor !== myColor) return;
-                        }
-                        clearHighlights();
-                        selectedSquare = {row, col};
-                        square.classList.add("selected");
-                        await highlightValidMoves(row, col);
-                    }
-                    return;
-                }
-                await movePiece(selectedSquare.row, selectedSquare.col, row, col);
-                if (document.getElementById("promotion-modal-overlay").style.display !== "flex") {
-                    clearHighlights();
-                    selectedSquare = null;
-                }
+                return;
             }
+
+            if (selectedSquare.row === row && selectedSquare.col === col) {
+                clearMoveHighlights();
+                selectedSquare = null;
+                return;
+            }
+
+            if (
+                square.classList.contains("valid-move") ||
+                square.classList.contains("valid-capture") ||
+                square.classList.contains("hint")
+            ) {
+                const moved = await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+                const promotionOverlay = document.getElementById("promotion-modal-overlay");
+                if (moved && (!promotionOverlay || promotionOverlay.style.display !== "flex")) {
+                    clearMoveHighlights();
+                    selectedSquare = null;
+                }
+                return;
+            }
+
+            if (!isPieceSquare(square)) {
+                return;
+            }
+
+            const pieceColor = getSquarePieceColor(square);
+            if (myColor && pieceColor !== myColor) {
+                return;
+            }
+
+            selectedSquare = { row: row, col: col };
+            await highlightValidMoves(row, col);
         });
     });
 
-    window.fetchAndRenderBoard = async function() {
+    window.fetchAndRenderBoard = async function () {
         try {
-            const res = await fetch(`/api/game/${gameId}/board`);
-            if (!res.ok) return;
-            const boardData = await res.json();
+            const response = await fetch(`/api/game/${gameId}/board`);
+            if (!response.ok) {
+                return;
+            }
+            const boardData = await response.json();
             renderBoardFromResponse(boardData);
-        } catch (e) {
-            console.error("Lỗi khi kéo bàn cờ mới:", e);
+        } catch (error) {
+            console.error("Loi tai ban co:", error);
         }
     };
 
     async function loadChatHistory() {
+        const chatMessages = document.getElementById("chat-messages");
+        if (!chatMessages) {
+            return;
+        }
+
         try {
             const response = await fetch(`/api/game/${gameId}/chat-history`);
-            if (response.ok) {
-                const chatHistory = await response.json();
-                if (chatHistory && chatHistory.length > 0) {
-                    chatHistory.forEach(chatMessage => {
-                        if (typeof window.renderChatMessage === 'function') {
-                            window.renderChatMessage(chatMessage);
-                        }
-                    });
-                }
+            if (!response.ok) {
+                return;
             }
+            const history = await response.json();
+            if (!Array.isArray(history)) {
+                return;
+            }
+            history.forEach(function (message) {
+                if (typeof window.renderChatMessage === "function") {
+                    window.renderChatMessage(message);
+                }
+            });
         } catch (error) {
-            console.error("Lỗi chat history", error);
+            console.error("Loi tai lich su chat:", error);
         }
     }
 
     function sendChatMessage() {
-        const inputField = document.getElementById("chat-input");
-        const content = inputField.value.trim();
-        if (content !== "" && window.stompClient) {
-            const chatMessage = {
+        const input = document.getElementById("chat-input");
+        if (!input) {
+            return;
+        }
+
+        const content = input.value.trim();
+        if (!content || !window.stompClient) {
+            return;
+        }
+
+        window.stompClient.send(
+            `/app/chat/${window.CURRENT_GAME_ID}`,
+            {},
+            JSON.stringify({
                 gameId: window.CURRENT_GAME_ID,
-                sender: window.CURRENT_USERNAME,
+                sender: currentUsername,
                 content: content,
                 type: "CHAT"
-            };
-            window.stompClient.send("/app/chat/" + window.CURRENT_GAME_ID, {}, JSON.stringify(chatMessage));
-            inputField.value = "";
-        }
+            })
+        );
+
+        input.value = "";
     }
 
-    window.renderChatMessage = function(chatMessage) {
-        const messageContainer = document.getElementById("chat-messages");
-        if (chatMessage.type === "SYSTEM") {
-            const sysMsg = document.createElement("div");
-            sysMsg.style.cssText = "text-align: center; font-size: 11px; color: #777; margin: 5px 0;";
-            sysMsg.innerText = chatMessage.content;
-            messageContainer.appendChild(sysMsg);
-        } else {
-            const isMe = chatMessage.sender === window.CURRENT_USERNAME;
-            const wrapper = document.createElement("div");
-            wrapper.className = `message-wrapper ${isMe ? 'me' : 'them'}`;
-            wrapper.innerHTML = `<div class="chat-sender">${isMe ? 'BẠN' : chatMessage.sender}</div><div class="chat-bubble">${chatMessage.content}</div>`;
-            messageContainer.appendChild(wrapper);
+    window.renderChatMessage = function (chatMessage) {
+        const container = document.getElementById("chat-messages");
+        if (!container || !chatMessage) {
+            return;
         }
-        messageContainer.scrollTop = messageContainer.scrollHeight;
+
+        if (chatMessage.type === "SYSTEM") {
+            const systemLine = document.createElement("div");
+            systemLine.style.cssText = "text-align:center;font-size:11px;color:#777;margin:5px 0;";
+            systemLine.innerText = chatMessage.content || "";
+            container.appendChild(systemLine);
+        } else {
+            const isMine = chatMessage.sender === currentUsername;
+            const wrapper = document.createElement("div");
+            wrapper.className = `message-wrapper ${isMine ? "me" : "them"}`;
+            wrapper.innerHTML =
+                `<div class="chat-sender">${isMine ? "BAN" : (chatMessage.sender || "Nguoi choi")}</div>` +
+                `<div class="chat-bubble">${chatMessage.content || ""}</div>`;
+            container.appendChild(wrapper);
+        }
+
+        container.scrollTop = container.scrollHeight;
     };
 
-    document.getElementById("btn-send-chat").addEventListener("click", sendChatMessage);
-    document.getElementById("chat-input").addEventListener("keypress", function (e) {
-        if (e.key === "Enter") sendChatMessage();
-    });
-    loadChatHistory();
+    window.handleCheckStatus = function (payload) {
+        squares.forEach(function (square) {
+            square.classList.remove("checked-king");
+        });
 
-    window.handleCheckStatus = function(payload) {
-        document.querySelectorAll(".square.checked-king").forEach(el => el.classList.remove("checked-king"));
-        const statusSpan = document.querySelector(".match-status span");
+        const statusSpan = getStatusSpan();
+        if (!payload) {
+            return;
+        }
 
         if (payload.action) {
-            // Hiển thị thông báo chat cho các hành động quan trọng
-            if (payload.message && typeof window.renderChatMessage === 'function') {
+            if (payload.message && typeof window.renderChatMessage === "function") {
                 window.renderChatMessage({
-                    type: 'SYSTEM',
+                    type: "SYSTEM",
                     content: payload.message
                 });
             }
 
-            if (payload.action === 'OFFER_DRAW') {
+            if (payload.action === "OFFER_DRAW") {
                 if (myColor && payload.actionPlayer !== myColor) {
                     window.pauseTimer();
-                    window.showModal("🤝", "Yêu cầu Cầu hòa", payload.message || "Đối thủ muốn cầu hòa. Bạn có đồng ý không?", "confirm", 
-                    () => {
-                        window.sendAction("ACCEPT_DRAW");
-                    }, 
-                    () => {
-                        window.sendAction("DECLINE_DRAW");
-                        window.resumeTimer();
-                    });
+                    window.showModal(
+                        "🤝",
+                        "Yeu Cau Cau Hoa",
+                        payload.message || "Doi thu muon cau hoa. Ban co dong y khong?",
+                        "confirm",
+                        function () {
+                            window.sendAction("ACCEPT_DRAW");
+                        },
+                        function () {
+                            window.sendAction("DECLINE_DRAW");
+                            window.resumeTimer();
+                        }
+                    );
                 }
                 return;
             }
-            if (['RESIGN', 'TIMEOUT', 'ACCEPT_DRAW'].includes(payload.action)) {
-                if (statusSpan) statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${payload.message}</span>`;
-                let icon = payload.action === 'TIMEOUT' ? "⏰" : (payload.action === 'RESIGN' ? "🏳️" : "🤝");
-                soundNotify.play().catch(e => {});
-                window.showModal(icon, "Kết thúc trận đấu", payload.message, "alert", () => window.location.href = "/");
+
+            if (["RESIGN", "TIMEOUT", "ACCEPT_DRAW"].includes(payload.action)) {
+                if (statusSpan) {
+                    statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${payload.message || ""}</span>`;
+                }
+                playAudio(sounds.notify);
+                window.showModal(
+                    payload.action === "TIMEOUT" ? "⏰" : (payload.action === "RESIGN" ? "🏳️" : "🤝"),
+                    "Ket Thuc Tran Dau",
+                    payload.message || "Tran dau da ket thuc",
+                    "alert",
+                    function () {
+                        window.location.href = "/";
+                    }
+                );
                 window.scheduleReturnToLobby(5);
-                if (window.timerInterval) clearInterval(window.timerInterval);
-                clearHighlights();
+                if (window.timerInterval) {
+                    clearInterval(window.timerInterval);
+                }
+                clearMoveHighlights();
                 selectedSquare = null;
                 return;
             }
@@ -424,118 +618,172 @@ document.addEventListener("DOMContentLoaded", function () {
         if (payload.currentTurn) {
             window.resetTimer(payload.currentTurn);
         }
-        
+
         if (payload.checkmate) {
-            const resultMsg = `CHIẾU HẾT! Quân ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} giành chiến thắng!`;
-            if (statusSpan) statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${resultMsg}</span>`;
-            if (window.timerInterval) clearInterval(window.timerInterval);
-            soundNotify.play().catch(e => {});
-            window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", () => window.location.href = "/");
-            window.scheduleReturnToLobby(5);
-            
-            if (typeof window.renderChatMessage === 'function') {
-                window.renderChatMessage({ type: 'SYSTEM', content: resultMsg });
+            const message =
+                `CHIEU HET! Quan ${payload.winner === "WHITE" ? "Trang" : "Den"} gianh chien thang!`;
+            if (statusSpan) {
+                statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${message}</span>`;
             }
-        } else if (payload.check) {
-            if (statusSpan) statusSpan.innerHTML = `<span style="color: #ffaa00; font-weight: bold; animation: pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>`;
-            if (payload.currentTurn == myColor) {
-                soundCheck.play().catch(e=>{});
+            if (window.timerInterval) {
+                clearInterval(window.timerInterval);
+            }
+            playAudio(sounds.notify);
+            window.showModal("🏆", "Chieu Het", message, "alert", function () {
+                window.location.href = "/";
+            });
+            window.scheduleReturnToLobby(5);
+            if (typeof window.renderChatMessage === "function") {
+                window.renderChatMessage({ type: "SYSTEM", content: message });
+            }
+            return;
+        }
+
+        if (payload.check) {
+            if (statusSpan) {
+                statusSpan.innerHTML =
+                    '<span style="color:#ffaa00;font-weight:bold;animation:pulse-text 1s infinite alternate;">DANG BI CHIEU TUONG!</span>';
+            }
+            if (payload.currentTurn === myColor) {
+                playAudio(sounds.check);
             }
             if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
-                const checkedKingSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
-                if (checkedKingSquare) checkedKingSquare.classList.add("checked-king");
+                const checkedSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
+                if (checkedSquare) {
+                    checkedSquare.classList.add("checked-king");
+                }
             }
-        } else {
-            if (statusSpan && !payload.action) statusSpan.textContent = "Trận đấu đang diễn ra...";
+            return;
+        }
+
+        if (statusSpan && !payload.action) {
+            statusSpan.textContent = "Tran dau dang dien ra...";
         }
     };
 
-    // -- TIMER LOGIC --
     window.timerSeconds = 30;
     window.timerInterval = null;
-    window.currentTurn = 'WHITE';
+    window.currentTurn = "WHITE";
     window.isPaused = false;
 
-    window.pauseTimer = function() {
+    window.pauseTimer = function () {
         window.isPaused = true;
     };
 
-    window.resumeTimer = function() {
+    window.resumeTimer = function () {
         window.isPaused = false;
     };
 
-    window.resetTimer = function(newTurn) {
-        if (window.timerInterval) clearInterval(window.timerInterval);
+    function updateTimerUI() {
+        const opponentTimer = document.getElementById("timer-opponent");
+        const yourTimer = document.getElementById("timer-you");
+        if (!opponentTimer || !yourTimer) {
+            return;
+        }
+
+        opponentTimer.innerText = "30s";
+        yourTimer.innerText = "30s";
+        opponentTimer.style.color = "";
+        yourTimer.style.color = "";
+
+        if (window.currentTurn === myColor) {
+            yourTimer.innerText = `${window.timerSeconds}s`;
+            if (window.timerSeconds <= 5) {
+                yourTimer.style.color = "#ff4d4d";
+            }
+        } else {
+            opponentTimer.innerText = `${window.timerSeconds}s`;
+            if (window.timerSeconds <= 5) {
+                opponentTimer.style.color = "#ff4d4d";
+            }
+        }
+    }
+
+    window.resetTimer = function (newTurn) {
+        if (window.timerInterval) {
+            clearInterval(window.timerInterval);
+        }
+
         window.currentTurn = newTurn || window.currentTurn;
         window.timerSeconds = 30;
         window.isPaused = false;
         updateTimerUI();
 
-        window.timerInterval = setInterval(() => {
-            if (window.isPaused) return;
-            
-            window.timerSeconds--;
+        window.timerInterval = setInterval(function () {
+            if (window.isPaused) {
+                return;
+            }
+
+            window.timerSeconds -= 1;
             updateTimerUI();
 
             if (window.timerSeconds <= 0) {
                 clearInterval(window.timerInterval);
-                // Người tới lượt hết giờ HOẶC đối thủ claim timeout
-                if (myColor && (window.currentTurn === myColor || true)) { 
-                    // Gửi timeout cho chắc chắn, Server sẽ check đúng turn không
+                if (myColor) {
                     window.sendAction("TIMEOUT");
                 }
             }
         }, 1000);
     };
 
-    function updateTimerUI() {
-        const oppTimer = document.getElementById('timer-opponent');
-        const youTimer = document.getElementById('timer-you');
-        if (!oppTimer || !youTimer) return;
-
-        oppTimer.innerText = '30s';
-        youTimer.innerText = '30s';
-
-        if (window.currentTurn === myColor) {
-            youTimer.innerText = window.timerSeconds + 's';
-            if (window.timerSeconds <= 5) youTimer.style.color = '#ff4d4d';
-            else youTimer.style.color = '';
-        } else {
-            oppTimer.innerText = window.timerSeconds + 's';
-            if (window.timerSeconds <= 5) oppTimer.style.color = '#ff4d4d';
-            else oppTimer.style.color = '';
-        }
-    }
-
-    window.sendAction = function(actionType) {
+    window.sendAction = function (actionType) {
         if (!myColor) {
-            console.warn("Chỉ người chơi mới có thể thực hiện hành động này.");
             return;
         }
+
         fetch(`/api/game/${gameId}/action`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: actionType })
-        }).catch(e => console.error("Lỗi khi gửi hành động:", e));
+        }).catch(function (error) {
+            console.error("Loi gui hanh dong:", error);
+        });
     };
 
-    // Gán sự kiện cho các nút hành động
-    const resignBtn = document.getElementById('btn-resign');
-    if (resignBtn) {
-        resignBtn.onclick = () => {
-            window.showModal("🏳️", "Đầu hàng", "Bạn có chắc chắn muốn đầu hàng không?", "confirm", () => {
-                window.sendAction("RESIGN");
-            });
+    const sendChatButton = document.getElementById("btn-send-chat");
+    if (sendChatButton) {
+        sendChatButton.addEventListener("click", sendChatMessage);
+    }
+
+    const chatInput = document.getElementById("chat-input");
+    if (chatInput) {
+        chatInput.addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                sendChatMessage();
+            }
+        });
+    }
+
+    const resignButton = document.getElementById("btn-resign");
+    if (resignButton) {
+        resignButton.onclick = function () {
+            window.showModal(
+                "🏳️",
+                "Dau Hang",
+                "Ban co chac chan muon dau hang khong?",
+                "confirm",
+                function () {
+                    window.sendAction("RESIGN");
+                }
+            );
         };
     }
 
-    const drawBtn = document.getElementById('btn-draw');
-    if (drawBtn) {
-        drawBtn.onclick = () => {
+    const drawButton = document.getElementById("btn-draw");
+    if (drawButton) {
+        drawButton.onclick = function () {
             window.sendAction("OFFER_DRAW");
-            window.showModal("📩", "Đã Gửi", "Đã gửi lời mời cầu hòa tới đối thủ.", "alert");
+            window.showModal("📩", "Da Gui", "Da gui loi moi cau hoa toi doi thu.", "alert");
         };
     }
-    
-    window.resetTimer('WHITE');
+
+    if (isBlack) {
+        const boardEl = document.querySelector(".chessboard");
+        if (boardEl) {
+            boardEl.classList.add("flipped");
+        }
+    }
+
+    loadChatHistory();
+    window.resetTimer("WHITE");
 });
