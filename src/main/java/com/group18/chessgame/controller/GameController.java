@@ -9,6 +9,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.group18.chessgame.repository.MoveRepository;
+import com.group18.chessgame.model.Move;
 
 @RestController
 @RequestMapping("/api/game")
@@ -17,6 +20,7 @@ public class GameController {
 
     private final GameLogicService gameLogicService;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final MoveRepository moveRepository;
 
     @PostMapping("/{gameId}/move")
     public GameResponse move(
@@ -69,5 +73,12 @@ public class GameController {
         }
 
         return response;
+    }
+
+    @GetMapping("/{gameId}/replay-moves")
+    @ResponseBody
+    public List<String> getReplayMoves(@PathVariable String gameId) {
+        List<Move> moves = moveRepository.findByGameIdOrderByMoveOrderAsc(gameId);
+        return moves.stream().map(Move::getMoveNotation).collect(Collectors.toList());
     }
 }

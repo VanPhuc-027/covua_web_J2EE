@@ -41,6 +41,7 @@
                             <th style="padding: 12px; border-bottom: 1px solid #444;">Đối thủ</th>
                             <th style="padding: 12px; border-bottom: 1px solid #444;">Kết quả</th>
                             <th style="padding: 12px; border-bottom: 1px solid #444;">Elo</th>
+                            <th style="padding: 12px; border-bottom: 1px solid #444;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -57,9 +58,12 @@
                                 <span th:text="${(game.eloChange >= 0 ? '+' : '') + game.eloChange}"
                                       th:style="'color: ' + (${game.eloChange >= 0} ? '#4caf50' : '#f44336')">Elo</span>
                             </td>
+                            <td style="padding: 12px;">
+                                <a th:href="@{/game/replay/{id}(id=${game.gameId})}" style="color: #2196f3; text-decoration: none; font-weight: bold; font-size: 0.85rem; padding: 5px 10px; background: rgba(33,150,243,0.1); border-radius: 4px; border: 1px solid #2196f3;">D.lại</a>
+                            </td>
                         </tr>
                         <tr th:if="${gameHistory.isEmpty()}">
-                            <td colspan="6" style="padding: 20px; text-align: center; color: #777;">Chưa có ván đấu nào</td>
+                            <td colspan="7" style="padding: 20px; text-align: center; color: #777;">Chưa có ván đấu nào</td>
                         </tr>
                     </tbody>
                 </table>

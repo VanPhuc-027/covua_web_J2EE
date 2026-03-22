@@ -72,4 +72,22 @@ public class GameLobbyController {
         model.addAttribute("board", board);
         return "game";
     }
+
+    @GetMapping("/replay/{id}")
+    public String showReplayRoom(@PathVariable String id, Model model, HttpSession session) {
+        Player currentPlayer = (Player) session.getAttribute("currentPlayer");
+        if (currentPlayer == null) return "redirect:/login";
+        Game game = gameService.getGame(id);
+        if (game == null) {
+            return "redirect:/";
+        }
+        Board board = new Board();
+        // Load the initial board state for replay
+        FenUtils.fenToBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", board);
+        game.setBoard(board);
+        model.addAttribute("currentPlayer", currentPlayer);
+        model.addAttribute("game", game);
+        model.addAttribute("board", board);
+        return "replay";
+    }
 }

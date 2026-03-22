@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // -- TIMER LOGIC --
-    window.timerSeconds = 30;
+    window.timerSeconds = 180;
     window.timerInterval = null;
     window.currentTurn = 'WHITE';
     window.isPaused = false;
