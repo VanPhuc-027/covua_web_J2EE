@@ -13,13 +13,18 @@
     <div class="lobby-main">
         <div class="lobby-actions" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; border-radius: 0;">
             <h3 style="margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">DANH SÁCH PHÒNG CHỜ</h3>
-            <form th:action="@{/game/create}" method="post" style="margin: 0;">
-                <button type="submit" style="background-color: #4caf50; color: white; border: none; border-radius: 0; padding: 10px 20px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.2s ease; box-shadow: 2px 2px 0px rgba(0,0,0,0.5);"
-                        onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='translate(-2px, -2px)'; this.style.boxShadow='4px 4px 0px rgba(0,0,0,0.6)';"
-                        onmouseout="this.style.backgroundColor='#4caf50'; this.style.transform='translate(0, 0)'; this.style.boxShadow='2px 2px 0px rgba(0,0,0,0.5)';">
-                    TẠO PHÒNG MỚI
+
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button type="button" onclick="showBotModal()" class="btn-create-room-bot">
+                    🤖 Đấu với máy
                 </button>
-            </form>
+
+                <form id="create-room-form" th:action="@{/game/create}" method="post" style="margin: 0;">
+                    <button type="button" onclick="clearBotMode(); document.getElementById('create-room-form').submit();" class="btn-create-room-pvp">
+                        TẠO PHÒNG MỚI
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="room-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px;">
@@ -41,7 +46,7 @@
                 </div>
                 <form th:if="${game.status.name() == 'WAITING'}" th:action="@{/game/join}" method="post" style="margin: 0;">
                     <input type="hidden" name="gameId" th:value="${game.id}">
-                    <button type="submit" style="width: 100%; background-color: transparent; color: #4caf50; border: 1px solid #4caf50; border-radius: 0; padding: 10px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.2s ease;"
+                    <button type="submit" onclick="clearBotMode()" style="width: 100%; background-color: transparent; color: #4caf50; border: 1px solid #4caf50; border-radius: 0; padding: 10px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.2s ease;"
                             onmouseover="this.style.backgroundColor='#4caf50'; this.style.color='#fff';"
                             onmouseout="this.style.backgroundColor='transparent'; this.style.color='#4caf50';">
                         VÀO CHƠI
@@ -69,8 +74,42 @@
     </aside>
 </main>
 
+<div class="bot-modal-overlay" id="bot-modal-overlay">
+    <div class="bot-modal">
+        <h3>ĐẤU VỚI MÁY</h3>
+        <p>CHỌN ĐỘ KHÓ</p>
+        <div class="bot-modal-buttons">
+            <button type="button" onclick="playWithBot(6)" class="btn-bot-diff">DỄ</button>
+            <button type="button" onclick="playWithBot(10)" class="btn-bot-diff">TRUNG BÌNH</button>
+            <button type="button" onclick="playWithBot(15)" class="btn-bot-diff">KHÓ</button>
+        </div>
+        <button type="button" onclick="closeBotModal()" class="btn-close-modal">Quay lại sảnh</button>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script>
+    function showBotModal() {
+        document.getElementById('bot-modal-overlay').classList.add('show');
+    }
+
+    function closeBotModal() {
+        document.getElementById('bot-modal-overlay').classList.remove('show');
+    }
+
+    function playWithBot(depth) {
+        sessionStorage.setItem("isBotMode", "true");
+        sessionStorage.setItem("botDepth", depth);
+        document.getElementById("create-room-form").submit();
+    }
+
+    function clearBotMode() {
+        sessionStorage.removeItem("isBotMode");
+        sessionStorage.removeItem("botDepth");
+    }
+</script>
 
 <script th:inline="javascript">
     /*<![CDATA[*/

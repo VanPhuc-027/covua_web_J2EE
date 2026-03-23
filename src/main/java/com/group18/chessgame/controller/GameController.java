@@ -75,6 +75,17 @@ public class GameController {
         return response;
     }
 
+    @PostMapping("/{gameId}/bot-move")
+    public GameResponse botMove(
+            @PathVariable String gameId,
+            @RequestParam(defaultValue = "10") int depth) {
+        GameResponse response = gameLogicService.makeBotMove(gameId, depth);
+        if (response.isSuccess()) {
+            simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, response);
+        }
+        return response;
+    }
+
     @GetMapping("/{gameId}/replay-moves")
     @ResponseBody
     public List<String> getReplayMoves(@PathVariable String gameId) {

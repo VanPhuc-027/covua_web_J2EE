@@ -5,7 +5,7 @@ import com.group18.chessgame.enums.GameStatus;
 import com.group18.chessgame.model.Board;
 import com.group18.chessgame.model.Game;
 import com.group18.chessgame.model.Player;
-import com.group18.chessgame.service.GameService;
+import com.group18.chessgame.service.GameLobbyService;
 import com.group18.chessgame.utils.FenUtils;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -18,14 +18,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/game")
 @RequiredArgsConstructor
 public class GameLobbyController {
-    private final GameService gameService;
+    private final GameLobbyService gameLobbyService;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @PostMapping("/create")
     public String createGame(HttpSession session) {
         Player creator = (Player) session.getAttribute("currentPlayer");
         if (creator == null) return "redirect:/login";
-        Game newGame = gameService.createGame(creator, GameMode.Player_VS_Player);
+        Game newGame = gameLobbyService.createGame(creator, GameMode.Player_VS_Player);
         simpMessagingTemplate.convertAndSend("/topic/lobby", "ROOM_CREATED:" + creator.getUsername());
         return "redirect:/game/" + newGame.getId();
     }
@@ -34,7 +34,7 @@ public class GameLobbyController {
     public String joinGame(@RequestParam String gameId, HttpSession session) {
         Player player = (Player) session.getAttribute("currentPlayer");
         if (player == null) return "redirect:/login";
-        Game joinGame = gameService.joinGame(gameId, player);
+        Game joinGame = gameLobbyService.joinGame(gameId, player);
         if (joinGame == null) return "redirect:/";
         simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, "PLAYER_JOINED");
         return "redirect:/game/" + gameId;
@@ -44,12 +44,12 @@ public class GameLobbyController {
     public String cancelGame(@RequestParam String gameId, HttpSession session) {
         Player player = (Player) session.getAttribute("currentPlayer");
         if (player == null) return "redirect:/login";
-        Game game = gameService.getGame(gameId);
+        Game game = gameLobbyService.getGame(gameId);
         if (game != null && game.getStatus() == GameStatus.WAITING) {
             boolean isPlayerInRoom = (game.getWhitePlayer() != null && game.getWhitePlayer().getId() == player.getId()) ||
                     (game.getBlackPlayer() != null && game.getBlackPlayer().getId() == player.getId());
             if (isPlayerInRoom) {
-                gameService.removeGame(gameId);
+                gameLobbyService.removeGame(gameId);
                 simpMessagingTemplate.convertAndSend("/topic/lobby", "ROOM_CANCELLED:" + player.getUsername());
             }
         }
@@ -60,7 +60,7 @@ public class GameLobbyController {
     public String showGameRoom(@PathVariable String id, Model model, HttpSession session) {
         Player currentPlayer = (Player) session.getAttribute("currentPlayer");
         if (currentPlayer == null) return "redirect:/login";
-        Game game = gameService.getGame(id);
+        Game game = gameLobbyService.getGame(id);
         if (game == null) {
             return "redirect:/";
         }
@@ -77,7 +77,7 @@ public class GameLobbyController {
     public String showReplayRoom(@PathVariable String id, Model model, HttpSession session) {
         Player currentPlayer = (Player) session.getAttribute("currentPlayer");
         if (currentPlayer == null) return "redirect:/login";
-        Game game = gameService.getGame(id);
+        Game game = gameLobbyService.getGame(id);
         if (game == null) {
             return "redirect:/";
         }
