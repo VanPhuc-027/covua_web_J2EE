@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import com.group18.chessgame.dto.GameHistoryDTO;
 
@@ -86,11 +87,37 @@ public class GameLobbyService {
         return savedGame;
     }
 
+    public Game createBotGame(Player creator) {
+        Player bot = playerRepository.findByUsername("BOT_FURINA");
+
+        if (bot == null) {
+            bot = new Player();
+            bot.setUsername("BOT_FURINA");
+            bot.setEmail("furina@chess.local");
+            bot.setPassword("bot@123456");
+            bot.setEloRating(1500);
+            bot = playerRepository.save(bot);
+        }
+
+        Game game = new Game(creator, bot, GameMode.Player_VS_Player);
+        game.setStatus(GameStatus.IN_PROGRESS);
+        game.setStartedAt(LocalDateTime.now());
+        game.setCurrentFen(FenUtils.boardToFen(new Board()));
+        Game savedGame = gameRepository.save(game);
+
+        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(), new java.util.ArrayList<>());
+        return savedGame;
+    }
+
     private void calculateEloChanges(Game game) {
         Player whitePlayer = game.getWhitePlayer();
         Player blackPlayer = game.getBlackPlayer();
 
         if (whitePlayer == null || blackPlayer == null) return;
+
+        if ("BOT_FURINA".equals(whitePlayer.getUsername()) || "BOT_FURINA".equals(blackPlayer.getUsername())) {
+            return;
+        }
 
         double expectedWhite = 1.0 / (1 + Math.pow(10, (blackPlayer.getEloRating() - whitePlayer.getEloRating()) / 400.0));
         double expectedBlack = 1.0 - expectedWhite;
@@ -127,15 +154,19 @@ public class GameLobbyService {
     }
 
     public List<Game> getWaitingGame() {
-        return gameRepository.findByStatusIn(Arrays.asList(GameStatus.WAITING, GameStatus.IN_PROGRESS));
+        List<Game> game = gameRepository.findByStatusIn(Arrays.asList(GameStatus.WAITING, GameStatus.IN_PROGRESS));
+        return game.stream()
+                .filter(g -> g.getBlackPlayer() == null || !"BOT_FURINA".equals(g.getBlackPlayer().getUsername()))
+                .filter(g -> g.getWhitePlayer() == null || !"BOT_FURINA".equals(g.getWhitePlayer().getUsername()))
+                .collect(Collectors.toList());
     }
 
     public Page<GameHistoryDTO> getGameHistory(long playerId, Pageable pageable) {
         Page<Game> gamesPage = gameRepository.findGameHistory(playerId, pageable);
         List<GameHistoryDTO> dtos = gamesPage.getContent().stream().map(game -> {
             boolean isWhite = game.getWhitePlayer().getId() == playerId;
-            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "Furina")
-                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "Furina");
+            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "BOT_FURINA")
+                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "BOT_FURINA");
             int eloChange = isWhite ? game.getWhiteEloChange() : game.getBlackEloChange();
 
             String outcome;

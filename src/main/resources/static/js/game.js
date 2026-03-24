@@ -607,7 +607,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const oppNameEl = document.querySelector(".player.opponent .details .name");
         if (oppNameEl) {
             let diff = botDepth <= 6 ? "Dễ" : (botDepth <= 10 ? "Trung Bình" : "Khó");
-            oppNameEl.innerText = "FURINA (" + diff + ")";
+            oppNameEl.innerText = "BOT_FURINA (" + diff + ")";
         }
 
         const matchStatusEl = document.querySelector(".match-status span");
