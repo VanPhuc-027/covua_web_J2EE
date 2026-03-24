@@ -30,6 +30,14 @@ public class GameLobbyController {
         return "redirect:/game/" + newGame.getId();
     }
 
+    @PostMapping("/create-bot")
+    public String createBotGame(HttpSession session) {
+        Player creator = (Player) session.getAttribute("currentPlayer");
+        if (creator == null) return "redirect:/login";
+        Game newGame = gameLobbyService.createBotGame(creator);
+        return "redirect:/game/" + newGame.getId();
+    }
+
     @PostMapping("/join")
     public String joinGame(@RequestParam String gameId, HttpSession session) {
         Player player = (Player) session.getAttribute("currentPlayer");

@@ -18,12 +18,12 @@
                 <button type="button" onclick="showBotModal()" class="btn-create-room-bot">
                     🤖 Đấu với máy
                 </button>
-
                 <form id="create-room-form" th:action="@{/game/create}" method="post" style="margin: 0;">
-                    <button type="button" onclick="clearBotMode(); document.getElementById('create-room-form').submit();" class="btn-create-room-pvp">
-                        TẠO PHÒNG MỚI
-                    </button>
+                <button type="button" onclick="clearBotMode(); document.getElementById('create-room-form').submit();" class="btn-create-room-pvp">
+                    TẠO PHÒNG MỚI
+                </button>
                 </form>
+                <form id="create-bot-form" th:action="@{/game/create-bot}" method="post" style="display: none;"></form>
             </div>
         </div>
 
@@ -102,7 +102,7 @@
     function playWithBot(depth) {
         sessionStorage.setItem("isBotMode", "true");
         sessionStorage.setItem("botDepth", depth);
-        document.getElementById("create-room-form").submit();
+        document.getElementById("create-bot-form").submit();
     }
 
     function clearBotMode() {

@@ -515,8 +515,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     };
 
-    // GIỮ NGUYÊN CODE CỦA BẠN ÔNG
-    window.timerSeconds = 180;
+    const DEFAULT_TIME = 180;
+    window.timerSeconds = DEFAULT_TIME;
     window.timerInterval = null;
     window.currentTurn = 'WHITE';
     window.isPaused = false;
@@ -532,7 +532,7 @@ document.addEventListener("DOMContentLoaded", function () {
     window.resetTimer = function(newTurn) {
         if (window.timerInterval) clearInterval(window.timerInterval);
         window.currentTurn = newTurn || window.currentTurn;
-        window.timerSeconds = 30; // Bug của bạn ông, tui giữ nguyên
+        window.timerSeconds = DEFAULT_TIME;
         window.isPaused = false;
         updateTimerUI();
 
@@ -556,8 +556,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const youTimer = document.getElementById('timer-you');
         if (!oppTimer || !youTimer) return;
 
-        oppTimer.innerText = '30s'; // Giữ nguyên
-        youTimer.innerText = '30s'; // Giữ nguyên
+        oppTimer.innerText = DEFAULT_TIME + 's';
+        youTimer.innerText = DEFAULT_TIME + 's';
 
         if (window.currentTurn === myColor) {
             youTimer.innerText = window.timerSeconds + 's';
@@ -607,7 +607,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const oppNameEl = document.querySelector(".player.opponent .details .name");
         if (oppNameEl) {
             let diff = botDepth <= 6 ? "Dễ" : (botDepth <= 10 ? "Trung Bình" : "Khó");
-            oppNameEl.innerText = "FURINA (" + diff + ")";
+            oppNameEl.innerText = "BOT_FURINA (" + diff + ")";
         }
 
         const matchStatusEl = document.querySelector(".match-status span");
@@ -638,5 +638,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    window.resetTimer('WHITE');
+    const isGameReady = (window.WHITE_PLAYER !== '' && window.BLACK_PLAYER !== '') || isBotMode;
+
+    if (isGameReady) {
+        window.resetTimer('WHITE');
+    } else {
+        const oppTimer = document.getElementById('timer-opponent');
+        const youTimer = document.getElementById('timer-you');
+        if (oppTimer) oppTimer.innerText = DEFAULT_TIME + 's';
+        if (youTimer) youTimer.innerText = DEFAULT_TIME + 's';
+    }
 });
