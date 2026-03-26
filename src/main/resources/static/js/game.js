@@ -4,20 +4,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentUsername = window.CURRENT_USERNAME || config.username || "guest";
     const whitePlayer = window.WHITE_PLAYER || "";
     const blackPlayer = window.BLACK_PLAYER || "";
+
+    if (!window.CURRENT_GAME_ID && config.gameId) window.CURRENT_GAME_ID = config.gameId;
+    if (!window.CURRENT_USERNAME && config.username) window.CURRENT_USERNAME = config.username;
+
     const isWhite = currentUsername === whitePlayer;
     const isBlack = currentUsername === blackPlayer;
-    const myColor = isWhite ? "WHITE" : (isBlack ? "BLACK" : null);
 
-    if (!window.CURRENT_GAME_ID && config.gameId) {
-        window.CURRENT_GAME_ID = config.gameId;
-    }
-    if (!window.CURRENT_USERNAME && config.username) {
-        window.CURRENT_USERNAME = config.username;
-    }
+    const isBotMode = sessionStorage.getItem("isBotMode") === "true";
+    const botDepth = Number(sessionStorage.getItem("botDepth") || 10);
+    const myColor = isWhite ? "WHITE" : (isBlack ? "BLACK" : (isBotMode ? "WHITE" : null));
 
     let selectedSquare = null;
     const squares = Array.from(document.querySelectorAll(".square"));
     const squareByPos = new Map();
+    window.validMoves = window.validMoves || {};
 
     const sounds = {
         move: new Audio("/sounds/move-self.mp3"),
@@ -45,34 +46,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function playAudio(audio) {
-        if (!audio || !isSoundEnabled()) {
-            return;
-        }
+        if (!audio || !isSoundEnabled()) return;
         try {
             audio.currentTime = 0;
             audio.play().catch(function () {});
         } catch (error) {
-            console.error("Loi phat am thanh:", error);
+            console.error("Lỗi phát âm thanh:", error);
         }
     }
 
     function playMoveSound(isCheck, isPromote, isCapture, isCastle) {
-        if (isCheck) {
-            playAudio(sounds.check);
-            return;
-        }
-        if (isPromote) {
-            playAudio(sounds.promote);
-            return;
-        }
-        if (isCapture) {
-            playAudio(sounds.capture);
-            return;
-        }
-        if (isCastle) {
-            playAudio(sounds.castle);
-            return;
-        }
+        if (isCheck) return playAudio(sounds.check);
+        if (isPromote) return playAudio(sounds.promote);
+        if (isCapture) return playAudio(sounds.capture);
+        if (isCastle) return playAudio(sounds.castle);
         playAudio(sounds.move);
     }
 
@@ -99,38 +86,27 @@ document.addEventListener("DOMContentLoaded", function () {
     function getSquarePieceColor(squareEl) {
         const img = squareEl ? squareEl.querySelector("img") : null;
         const src = img ? (img.getAttribute("src") || "").toLowerCase() : "";
-        if (src.includes("white_")) {
-            return "WHITE";
-        }
-        if (src.includes("black_")) {
-            return "BLACK";
-        }
+        if (src.includes("white_")) return "WHITE";
+        if (src.includes("black_")) return "BLACK";
         return null;
     }
 
     function renderBoardFromResponse(board) {
         const boxes = board && board.boxes;
-        if (!Array.isArray(boxes) || boxes.length !== 8) {
-            return;
-        }
+        if (!Array.isArray(boxes) || boxes.length !== 8) return;
 
         for (let r = 0; r < 8; r += 1) {
-            if (!Array.isArray(boxes[r]) || boxes[r].length !== 8) {
-                continue;
-            }
+            if (!Array.isArray(boxes[r]) || boxes[r].length !== 8) continue;
+
             for (let c = 0; c < 8; c += 1) {
                 const square = squareByPos.get(`${r},${c}`);
-                if (!square) {
-                    continue;
-                }
+                if (!square) continue;
 
                 const piece = boxes[r][c] && boxes[r][c].piece ? boxes[r][c].piece : null;
                 const existingImg = square.querySelector("img");
 
                 if (!piece) {
-                    if (existingImg) {
-                        existingImg.remove();
-                    }
+                    if (existingImg) existingImg.remove();
                     continue;
                 }
 
@@ -138,9 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (existingImg.getAttribute("src") !== piece.iconPath) {
                         existingImg.setAttribute("src", piece.iconPath);
                     }
-                    if (!existingImg.classList.contains("chess-piece")) {
-                        existingImg.classList.add("chess-piece");
-                    }
+                    existingImg.classList.add("chess-piece");
                 } else {
                     const img = document.createElement("img");
                     img.src = piece.iconPath;
@@ -154,49 +128,46 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.renderBoardFromResponse = renderBoardFromResponse;
 
+    if (isBlack) {
+        const boardEl = document.querySelector(".chessboard");
+        if (boardEl) boardEl.classList.add("flipped");
+    }
+
     async function highlightValidMoves(fromRow, fromCol) {
         clearMoveHighlights();
 
         const originSquare = squareByPos.get(`${fromRow},${fromCol}`);
-        if (originSquare) {
-            originSquare.classList.add("selected");
-        }
+        if (originSquare) originSquare.classList.add("selected");
 
-        if (!isHintsEnabled()) {
-            return;
-        }
+        if (!isHintsEnabled()) return;
 
-        try {
-            const response = await fetch(
-                `/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`
-            );
-            if (!response.ok) {
+        let moves = window.validMoves[`${fromRow},${fromCol}`];
+
+        if (!Array.isArray(moves)) {
+            try {
+                const response = await fetch(
+                    `/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`
+                );
+                if (!response.ok) return;
+                moves = await response.json();
+            } catch (error) {
+                console.error("Lỗi lấy nước đi hợp lệ:", error);
                 return;
             }
-
-            const moves = await response.json();
-            if (!Array.isArray(moves)) {
-                return;
-            }
-
-            moves.forEach(function (move) {
-                const row = move && move[0];
-                const col = move && move[1];
-                const target = squareByPos.get(`${row},${col}`);
-                if (!target) {
-                    return;
-                }
-
-                target.classList.add("hint");
-                if (isPieceSquare(target)) {
-                    target.classList.add("valid-capture");
-                } else {
-                    target.classList.add("valid-move");
-                }
-            });
-        } catch (error) {
-            console.error("Loi lay nuoc di hop le:", error);
         }
+
+        if (!Array.isArray(moves)) return;
+
+        moves.forEach(function (move) {
+            const row = move && move[0];
+            const col = move && move[1];
+            const target = squareByPos.get(`${row},${col}`);
+            if (!target) return;
+
+            target.classList.add("hint");
+            if (isPieceSquare(target)) target.classList.add("valid-capture");
+            else target.classList.add("valid-move");
+        });
     }
 
     function isCastlingMove(pieceImg, fromCol, toCol) {
@@ -205,15 +176,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion) {
-        if (!myColor) {
-            return false;
-        }
+        if (!myColor) return false;
 
         const fromSquare = squareByPos.get(`${fromRow},${fromCol}`);
         const pieceImg = fromSquare ? fromSquare.querySelector("img") : null;
-        if (!pieceImg) {
-            return false;
-        }
+        if (!pieceImg) return false;
 
         const pieceSrc = (pieceImg.getAttribute("src") || "").toLowerCase();
         const isPawn = pieceSrc.includes("pawn");
@@ -249,7 +216,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await response.json();
             if (!data || !data.success) {
-                alert((data && data.message) || "Nuoc di khong hop le");
+                alert((data && data.message) || "Nước đi không hợp lệ");
+                if (typeof window.fetchAndRenderBoard === "function") {
+                    await window.fetchAndRenderBoard();
+                }
                 return false;
             }
 
@@ -260,18 +230,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 window.handleCheckStatus(data);
             }
 
+            if (isBotMode && data.currentTurn === "BLACK") {
+                setTimeout(function () {
+                    fetch(`/api/game/${gameId}/bot-move?depth=${botDepth}`, { method: "POST" })
+                        .catch(function (err) { console.error("Lỗi gọi Bot:", err); });
+                }, 500);
+            }
+
             return true;
         } catch (error) {
-            console.error("Loi di chuyen quan co:", error);
-            alert("Khong the ket noi toi may chu");
+            console.error("Lỗi di chuyển quân cờ:", error);
+            alert("Không thể kết nối tới máy chủ");
+            if (typeof window.fetchAndRenderBoard === "function") {
+                await window.fetchAndRenderBoard();
+            }
             return false;
         }
     }
 
     function closeOverlay(overlay) {
-        if (!overlay) {
-            return;
-        }
+        if (!overlay) return;
         overlay.style.opacity = "0";
         overlay.style.pointerEvents = "none";
         setTimeout(function () {
@@ -280,9 +258,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function showOverlay(overlay) {
-        if (!overlay) {
-            return;
-        }
+        if (!overlay) return;
         overlay.style.display = "flex";
         void overlay.offsetWidth;
         overlay.style.opacity = "1";
@@ -292,9 +268,7 @@ document.addEventListener("DOMContentLoaded", function () {
     window.showModal = function (icon, title, message, type, confirmCallback, cancelCallback) {
         const overlay = document.getElementById("game-modal-overlay");
         if (!overlay) {
-            if (message) {
-                alert(message);
-            }
+            if (message) alert(message);
             return;
         }
 
@@ -306,12 +280,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const okBtn = document.getElementById("game-modal-btn-ok");
 
         if (!iconEl || !titleEl || !messageEl || !confirmBtn || !cancelBtn || !okBtn) {
-            alert(message || title || "Thong bao");
+            alert(message || title || "Thông báo");
             return;
         }
 
         iconEl.innerText = icon || "";
-        titleEl.innerText = title || "Thong bao";
+        titleEl.innerText = title || "Thông báo";
         messageEl.innerHTML = message || "";
 
         const newConfirmBtn = confirmBtn.cloneNode(true);
@@ -329,16 +303,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
             newConfirmBtn.onclick = function () {
                 closeOverlay(overlay);
-                if (typeof confirmCallback === "function") {
-                    confirmCallback();
-                }
+                if (typeof confirmCallback === "function") confirmCallback();
             };
 
             newCancelBtn.onclick = function () {
                 closeOverlay(overlay);
-                if (typeof cancelCallback === "function") {
-                    cancelCallback();
-                }
+                if (typeof cancelCallback === "function") cancelCallback();
             };
         } else {
             newConfirmBtn.style.display = "none";
@@ -346,9 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
             newOkBtn.style.display = "block";
             newOkBtn.onclick = function () {
                 closeOverlay(overlay);
-                if (typeof confirmCallback === "function") {
-                    confirmCallback();
-                }
+                if (typeof confirmCallback === "function") confirmCallback();
             };
         }
 
@@ -365,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (messageEl) {
                 messageEl.innerHTML =
                     `${baseMessage}<br><br><span style="color:#aaa;font-size:13px;">` +
-                    `Chuyen ve sanh sau <b style="color:#fff">${remaining}s</b>...</span>`;
+                    `Chuyển về sảnh sau <b style="color:#fff">${remaining}s</b>...</span>`;
             }
             if (remaining <= 0) {
                 clearInterval(timer);
@@ -375,14 +343,10 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     function showPromotionModal(fromRow, fromCol, toRow, toCol) {
-        if (!myColor) {
-            return;
-        }
+        if (!myColor) return;
 
         const overlay = document.getElementById("promotion-modal-overlay");
-        if (!overlay) {
-            return;
-        }
+        if (!overlay) return;
 
         const color = myColor.toLowerCase();
         const mapping = [
@@ -394,9 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         mapping.forEach(function (entry) {
             const img = document.getElementById(entry[0]);
-            if (img) {
-                img.src = `/img/${color}_${entry[1]}.png`;
-            }
+            if (img) img.src = `/img/${color}_${entry[1]}.png`;
         });
 
         overlay.style.display = "flex";
@@ -412,20 +374,304 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function renderMoveHistory(history) {
+        const moveList = document.querySelector(".moves-list");
+        if (!moveList || !Array.isArray(history)) return;
+
+        moveList.innerHTML = "";
+        for (let i = 0; i < history.length; i += 2) {
+            const row = document.createElement("div");
+            row.className = "move-row";
+
+            const num = Math.floor(i / 2) + 1;
+            const whiteMove = history[i] || "";
+            const blackMove = history[i + 1] || "";
+
+            row.innerHTML = `
+                <span class="move-num">${num}.</span>
+                <span class="move-white">${whiteMove}</span>
+                <span class="move-black">${blackMove}</span>
+            `;
+            moveList.appendChild(row);
+        }
+        moveList.scrollTop = moveList.scrollHeight;
+    }
+
+    window.fetchAndRenderBoard = async function () {
+        try {
+            const response = await fetch(`/api/game/${gameId}/board`);
+            if (!response.ok) return;
+            const boardData = await response.json();
+            renderBoardFromResponse(boardData);
+        } catch (error) {
+            console.error("Lỗi tải bàn cờ:", error);
+            try {
+                const res = await fetch(`/api/game/${gameId}/state`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.board) renderBoardFromResponse(data.board);
+                if (typeof window.handleCheckStatus === "function") {
+                    window.handleCheckStatus(data);
+                }
+            } catch (e) {
+                console.error("Lỗi khi kéo trạng thái game:", e);
+            }
+        }
+    };
+
+    async function loadChatHistory() {
+        const chatMessages = document.getElementById("chat-messages");
+        if (!chatMessages) return;
+
+        try {
+            const response = await fetch(`/api/game/${gameId}/chat-history`);
+            if (!response.ok) return;
+            const history = await response.json();
+            if (!Array.isArray(history)) return;
+
+            history.forEach(function (message) {
+                if (typeof window.renderChatMessage === "function") {
+                    window.renderChatMessage(message);
+                }
+            });
+        } catch (error) {
+            console.error("Lỗi tải lịch sử chat:", error);
+        }
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById("chat-input");
+        if (!input) return;
+
+        const content = input.value.trim();
+        if (!content || !window.stompClient) return;
+
+        window.stompClient.send(
+            `/app/chat/${window.CURRENT_GAME_ID}`,
+            {},
+            JSON.stringify({
+                gameId: window.CURRENT_GAME_ID,
+                sender: currentUsername,
+                content: content,
+                type: "CHAT"
+            })
+        );
+
+        input.value = "";
+    }
+
+    window.renderChatMessage = function (chatMessage) {
+        const container = document.getElementById("chat-messages");
+        if (!container || !chatMessage) return;
+
+        if (chatMessage.type === "SYSTEM") {
+            const systemLine = document.createElement("div");
+            systemLine.style.cssText = "text-align:center;font-size:11px;color:#777;margin:5px 0;";
+            systemLine.innerText = chatMessage.content || "";
+            container.appendChild(systemLine);
+        } else {
+            const isMine = chatMessage.sender === currentUsername;
+            const wrapper = document.createElement("div");
+            wrapper.className = `message-wrapper ${isMine ? "me" : "them"}`;
+            wrapper.innerHTML =
+                `<div class="chat-sender">${isMine ? "BẠN" : (chatMessage.sender || "Người chơi")}</div>` +
+                `<div class="chat-bubble">${chatMessage.content || ""}</div>`;
+            container.appendChild(wrapper);
+        }
+
+        container.scrollTop = container.scrollHeight;
+    };
+
+    window.handleCheckStatus = function (payload) {
+        squares.forEach(function (square) {
+            square.classList.remove("checked-king");
+        });
+
+        const statusSpan = getStatusSpan();
+        if (!payload) return;
+
+        if (payload.moveHistory) {
+            renderMoveHistory(payload.moveHistory);
+        }
+
+        if (payload.validMoves) {
+            window.validMoves = payload.validMoves;
+        }
+
+        if (payload.action) {
+            if (payload.message && typeof window.renderChatMessage === "function") {
+                window.renderChatMessage({
+                    type: "SYSTEM",
+                    content: payload.message
+                });
+            }
+
+            if (payload.action === "OFFER_DRAW") {
+                if (myColor && payload.actionPlayer !== myColor) {
+                    window.pauseTimer();
+                    window.showModal(
+                        "🤝",
+                        "Yêu cầu Cầu hòa",
+                        payload.message || "Đối thủ muốn cầu hòa. Bạn có đồng ý không?",
+                        "confirm",
+                        function () {
+                            window.sendAction("ACCEPT_DRAW");
+                        },
+                        function () {
+                            window.sendAction("DECLINE_DRAW");
+                            window.resumeTimer();
+                        }
+                    );
+                }
+                return;
+            }
+
+            if (["RESIGN", "TIMEOUT", "ACCEPT_DRAW"].includes(payload.action)) {
+                if (statusSpan) {
+                    statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${payload.message || ""}</span>`;
+                }
+                playAudio(sounds.notify);
+                window.showModal(
+                    payload.action === "TIMEOUT" ? "⏰" : (payload.action === "RESIGN" ? "🏳️" : "🤝"),
+                    "Kết Thúc Trận Đấu",
+                    payload.message || "Trận đấu đã kết thúc",
+                    "alert",
+                    function () {
+                        window.location.href = "/";
+                    }
+                );
+                window.scheduleReturnToLobby(5);
+                if (window.timerInterval) clearInterval(window.timerInterval);
+                clearMoveHighlights();
+                selectedSquare = null;
+                return;
+            }
+        }
+
+        if (payload.currentTurn) {
+            window.resetTimer(payload.currentTurn);
+            if (statusSpan && !payload.check && !payload.checkmate && !payload.action) {
+                const turnName = payload.currentTurn === "WHITE" ? "TRẮNG" : "ĐEN";
+                statusSpan.innerHTML = `Lượt của: <b style="color: var(--primary-color); text-shadow: 0 0 5px rgba(255,255,255,0.2)">${turnName}</b>`;
+            }
+        }
+
+        if (payload.checkmate) {
+            const resultMsg = `CHIẾU HẾT! Quân ${payload.winner === "WHITE" ? "Trắng" : "Đen"} giành chiến thắng!`;
+            if (statusSpan) {
+                statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${resultMsg}</span>`;
+            }
+            if (window.timerInterval) clearInterval(window.timerInterval);
+            playAudio(sounds.notify);
+            window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", function () {
+                window.location.href = "/";
+            });
+            window.scheduleReturnToLobby(5);
+
+            if (typeof window.renderChatMessage === "function") {
+                window.renderChatMessage({ type: "SYSTEM", content: resultMsg });
+            }
+            return;
+        }
+
+        if (payload.check) {
+            if (statusSpan) {
+                statusSpan.innerHTML =
+                    '<span style="color:#ffaa00;font-weight:bold;animation:pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>';
+            }
+            if (payload.currentTurn === myColor) {
+                playAudio(sounds.check);
+            }
+            if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
+                const checkedSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
+                if (checkedSquare) checkedSquare.classList.add("checked-king");
+            }
+            return;
+        }
+
+        if (statusSpan && !payload.action) {
+            statusSpan.textContent = "Trận đấu đang diễn ra...";
+        }
+    };
+
+    const DEFAULT_TIME = 180;
+    window.timerSeconds = DEFAULT_TIME;
+    window.timerInterval = null;
+    window.currentTurn = "WHITE";
+    window.isPaused = false;
+
+    window.pauseTimer = function () {
+        window.isPaused = true;
+    };
+
+    window.resumeTimer = function () {
+        window.isPaused = false;
+    };
+
+    function updateTimerUI() {
+        const opponentTimer = document.getElementById("timer-opponent");
+        const yourTimer = document.getElementById("timer-you");
+        if (!opponentTimer || !yourTimer) return;
+
+        opponentTimer.innerText = DEFAULT_TIME + "s";
+        yourTimer.innerText = DEFAULT_TIME + "s";
+        opponentTimer.style.color = "";
+        yourTimer.style.color = "";
+
+        if (window.currentTurn === myColor) {
+            yourTimer.innerText = window.timerSeconds + "s";
+            if (window.timerSeconds <= 5) yourTimer.style.color = "#ff4d4d";
+        } else {
+            opponentTimer.innerText = window.timerSeconds + "s";
+            if (window.timerSeconds <= 5) opponentTimer.style.color = "#ff4d4d";
+        }
+    }
+
+    window.resetTimer = function (newTurn) {
+        if (window.timerInterval) clearInterval(window.timerInterval);
+
+        window.currentTurn = newTurn || window.currentTurn;
+        window.timerSeconds = DEFAULT_TIME;
+        window.isPaused = false;
+        updateTimerUI();
+
+        window.timerInterval = setInterval(function () {
+            if (window.isPaused) return;
+
+            window.timerSeconds -= 1;
+            updateTimerUI();
+
+            if (window.timerSeconds <= 0) {
+                clearInterval(window.timerInterval);
+                if (myColor) {
+                    window.sendAction("TIMEOUT");
+                }
+            }
+        }, 1000);
+    };
+
+    window.sendAction = function (actionType) {
+        if (!myColor) return;
+
+        fetch(`/api/game/${gameId}/action`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: actionType })
+        }).catch(function (error) {
+            console.error("Lỗi gửi hành động:", error);
+        });
+    };
+
     squares.forEach(function (square) {
         square.addEventListener("click", async function () {
             const row = square.dataset.row;
             const col = square.dataset.col;
 
             if (!selectedSquare) {
-                if (!isPieceSquare(square)) {
-                    return;
-                }
+                if (!isPieceSquare(square)) return;
 
                 const pieceColor = getSquarePieceColor(square);
-                if (myColor && pieceColor !== myColor) {
-                    return;
-                }
+                if (myColor && pieceColor !== myColor) return;
 
                 selectedSquare = { row: row, col: col };
                 await highlightValidMoves(row, col);
@@ -452,293 +698,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            if (!isPieceSquare(square)) {
-                return;
-            }
+            if (!isPieceSquare(square)) return;
 
             const pieceColor = getSquarePieceColor(square);
-            if (myColor && pieceColor !== myColor) {
-                return;
-            }
+            if (myColor && pieceColor !== myColor) return;
 
             selectedSquare = { row: row, col: col };
             await highlightValidMoves(row, col);
         });
     });
-
-    window.fetchAndRenderBoard = async function () {
-        try {
-            const response = await fetch(`/api/game/${gameId}/board`);
-            if (!response.ok) {
-                return;
-            }
-            const boardData = await response.json();
-            renderBoardFromResponse(boardData);
-        } catch (error) {
-            console.error("Loi tai ban co:", error);
-        }
-    };
-
-    async function loadChatHistory() {
-        const chatMessages = document.getElementById("chat-messages");
-        if (!chatMessages) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/game/${gameId}/chat-history`);
-            if (!response.ok) {
-                return;
-            }
-            const history = await response.json();
-            if (!Array.isArray(history)) {
-                return;
-            }
-            history.forEach(function (message) {
-                if (typeof window.renderChatMessage === "function") {
-                    window.renderChatMessage(message);
-                }
-            });
-        } catch (error) {
-            console.error("Loi tai lich su chat:", error);
-        }
-    }
-
-    function sendChatMessage() {
-        const input = document.getElementById("chat-input");
-        if (!input) {
-            return;
-        }
-
-        const content = input.value.trim();
-        if (!content || !window.stompClient) {
-            return;
-        }
-
-        window.stompClient.send(
-            `/app/chat/${window.CURRENT_GAME_ID}`,
-            {},
-            JSON.stringify({
-                gameId: window.CURRENT_GAME_ID,
-                sender: currentUsername,
-                content: content,
-                type: "CHAT"
-            })
-        );
-
-        input.value = "";
-    }
-
-    window.renderChatMessage = function (chatMessage) {
-        const container = document.getElementById("chat-messages");
-        if (!container || !chatMessage) {
-            return;
-        }
-
-        if (chatMessage.type === "SYSTEM") {
-            const systemLine = document.createElement("div");
-            systemLine.style.cssText = "text-align:center;font-size:11px;color:#777;margin:5px 0;";
-            systemLine.innerText = chatMessage.content || "";
-            container.appendChild(systemLine);
-        } else {
-            const isMine = chatMessage.sender === currentUsername;
-            const wrapper = document.createElement("div");
-            wrapper.className = `message-wrapper ${isMine ? "me" : "them"}`;
-            wrapper.innerHTML =
-                `<div class="chat-sender">${isMine ? "BAN" : (chatMessage.sender || "Nguoi choi")}</div>` +
-                `<div class="chat-bubble">${chatMessage.content || ""}</div>`;
-            container.appendChild(wrapper);
-        }
-
-        container.scrollTop = container.scrollHeight;
-    };
-
-    window.handleCheckStatus = function (payload) {
-        squares.forEach(function (square) {
-            square.classList.remove("checked-king");
-        });
-
-        const statusSpan = getStatusSpan();
-        if (!payload) {
-            return;
-        }
-
-        if (payload.action) {
-            if (payload.message && typeof window.renderChatMessage === "function") {
-                window.renderChatMessage({
-                    type: "SYSTEM",
-                    content: payload.message
-                });
-            }
-
-            if (payload.action === "OFFER_DRAW") {
-                if (myColor && payload.actionPlayer !== myColor) {
-                    window.pauseTimer();
-                    window.showModal(
-                        "🤝",
-                        "Yeu Cau Cau Hoa",
-                        payload.message || "Doi thu muon cau hoa. Ban co dong y khong?",
-                        "confirm",
-                        function () {
-                            window.sendAction("ACCEPT_DRAW");
-                        },
-                        function () {
-                            window.sendAction("DECLINE_DRAW");
-                            window.resumeTimer();
-                        }
-                    );
-                }
-                return;
-            }
-
-            if (["RESIGN", "TIMEOUT", "ACCEPT_DRAW"].includes(payload.action)) {
-                if (statusSpan) {
-                    statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${payload.message || ""}</span>`;
-                }
-                playAudio(sounds.notify);
-                window.showModal(
-                    payload.action === "TIMEOUT" ? "⏰" : (payload.action === "RESIGN" ? "🏳️" : "🤝"),
-                    "Ket Thuc Tran Dau",
-                    payload.message || "Tran dau da ket thuc",
-                    "alert",
-                    function () {
-                        window.location.href = "/";
-                    }
-                );
-                window.scheduleReturnToLobby(5);
-                if (window.timerInterval) {
-                    clearInterval(window.timerInterval);
-                }
-                clearMoveHighlights();
-                selectedSquare = null;
-                return;
-            }
-        }
-
-        if (payload.currentTurn) {
-            window.resetTimer(payload.currentTurn);
-        }
-
-        if (payload.checkmate) {
-            const message =
-                `CHIEU HET! Quan ${payload.winner === "WHITE" ? "Trang" : "Den"} gianh chien thang!`;
-            if (statusSpan) {
-                statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${message}</span>`;
-            }
-            if (window.timerInterval) {
-                clearInterval(window.timerInterval);
-            }
-            playAudio(sounds.notify);
-            window.showModal("🏆", "Chieu Het", message, "alert", function () {
-                window.location.href = "/";
-            });
-            window.scheduleReturnToLobby(5);
-            if (typeof window.renderChatMessage === "function") {
-                window.renderChatMessage({ type: "SYSTEM", content: message });
-            }
-            return;
-        }
-
-        if (payload.check) {
-            if (statusSpan) {
-                statusSpan.innerHTML =
-                    '<span style="color:#ffaa00;font-weight:bold;animation:pulse-text 1s infinite alternate;">DANG BI CHIEU TUONG!</span>';
-            }
-            if (payload.currentTurn === myColor) {
-                playAudio(sounds.check);
-            }
-            if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
-                const checkedSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
-                if (checkedSquare) {
-                    checkedSquare.classList.add("checked-king");
-                }
-            }
-            return;
-        }
-
-        if (statusSpan && !payload.action) {
-            statusSpan.textContent = "Tran dau dang dien ra...";
-        }
-    };
-
-    window.timerSeconds = 30;
-    window.timerInterval = null;
-    window.currentTurn = "WHITE";
-    window.isPaused = false;
-
-    window.pauseTimer = function () {
-        window.isPaused = true;
-    };
-
-    window.resumeTimer = function () {
-        window.isPaused = false;
-    };
-
-    function updateTimerUI() {
-        const opponentTimer = document.getElementById("timer-opponent");
-        const yourTimer = document.getElementById("timer-you");
-        if (!opponentTimer || !yourTimer) {
-            return;
-        }
-
-        opponentTimer.innerText = "30s";
-        yourTimer.innerText = "30s";
-        opponentTimer.style.color = "";
-        yourTimer.style.color = "";
-
-        if (window.currentTurn === myColor) {
-            yourTimer.innerText = `${window.timerSeconds}s`;
-            if (window.timerSeconds <= 5) {
-                yourTimer.style.color = "#ff4d4d";
-            }
-        } else {
-            opponentTimer.innerText = `${window.timerSeconds}s`;
-            if (window.timerSeconds <= 5) {
-                opponentTimer.style.color = "#ff4d4d";
-            }
-        }
-    }
-
-    window.resetTimer = function (newTurn) {
-        if (window.timerInterval) {
-            clearInterval(window.timerInterval);
-        }
-
-        window.currentTurn = newTurn || window.currentTurn;
-        window.timerSeconds = 30;
-        window.isPaused = false;
-        updateTimerUI();
-
-        window.timerInterval = setInterval(function () {
-            if (window.isPaused) {
-                return;
-            }
-
-            window.timerSeconds -= 1;
-            updateTimerUI();
-
-            if (window.timerSeconds <= 0) {
-                clearInterval(window.timerInterval);
-                if (myColor) {
-                    window.sendAction("TIMEOUT");
-                }
-            }
-        }, 1000);
-    };
-
-    window.sendAction = function (actionType) {
-        if (!myColor) {
-            return;
-        }
-
-        fetch(`/api/game/${gameId}/action`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: actionType })
-        }).catch(function (error) {
-            console.error("Loi gui hanh dong:", error);
-        });
-    };
 
     const sendChatButton = document.getElementById("btn-send-chat");
     if (sendChatButton) {
@@ -759,8 +727,8 @@ document.addEventListener("DOMContentLoaded", function () {
         resignButton.onclick = function () {
             window.showModal(
                 "🏳️",
-                "Dau Hang",
-                "Ban co chac chan muon dau hang khong?",
+                "Đầu hàng",
+                "Bạn có chắc chắn muốn đầu hàng không?",
                 "confirm",
                 function () {
                     window.sendAction("RESIGN");
@@ -773,17 +741,69 @@ document.addEventListener("DOMContentLoaded", function () {
     if (drawButton) {
         drawButton.onclick = function () {
             window.sendAction("OFFER_DRAW");
-            window.showModal("📩", "Da Gui", "Da gui loi moi cau hoa toi doi thu.", "alert");
+            window.showModal("📩", "Đã gửi", "Đã gửi lời mời cầu hòa tới đối thủ.", "alert");
         };
     }
 
-    if (isBlack) {
-        const boardEl = document.querySelector(".chessboard");
-        if (boardEl) {
-            boardEl.classList.add("flipped");
+    loadChatHistory();
+
+    if (isBotMode) {
+        const waitingOverlay = document.querySelector(".waiting-overlay");
+        if (waitingOverlay) waitingOverlay.style.display = "none";
+
+        const oppNameEl = document.querySelector(".player.opponent .details .name");
+        if (oppNameEl) {
+            const diff = botDepth <= 6 ? "Dễ" : (botDepth <= 10 ? "Trung Bình" : "Khó");
+            oppNameEl.innerText = "BOT_FURINA (" + diff + ")";
+        }
+
+        const matchStatusEl = document.querySelector(".match-status span");
+        if (matchStatusEl) matchStatusEl.innerText = "Trận đấu đang diễn ra...";
+
+        const cancelForm = document.querySelector(".menu-items form[action='/game/cancel']");
+        if (cancelForm) cancelForm.style.display = "none";
+
+        let gameActions = document.querySelector(".game-actions");
+        if (!gameActions) {
+            gameActions = document.createElement("div");
+            gameActions.className = "game-actions";
+            gameActions.style.cssText = "display:flex;gap:10px;padding:15px;border-bottom:1px solid rgba(255,255,255,0.1);";
+            gameActions.innerHTML = `
+                <button id="btn-draw-bot" style="flex:1; padding:10px; border-radius:8px; border:none; background:#607d8b; color:white; cursor:pointer; font-weight:bold; font-family:inherit; font-size:14px;">🤝 Cầu hòa</button>
+                <button id="btn-resign-bot" style="flex:1; padding:10px; border-radius:8px; border:none; background:#f44336; color:white; cursor:pointer; font-weight:bold; font-family:inherit; font-size:14px;">🏳️ Đầu hàng</button>
+            `;
+            const rightPanel = document.querySelector(".right-panel");
+            const moveHistory = document.querySelector(".move-history");
+            if (rightPanel && moveHistory) {
+                rightPanel.insertBefore(gameActions, moveHistory);
+            }
+
+            const resignBotBtn = document.getElementById("btn-resign-bot");
+            if (resignBotBtn) {
+                resignBotBtn.onclick = function () {
+                    window.showModal("🏳️", "Đầu hàng", "Bạn chắc chắn muốn đầu hàng em Bot này?", "confirm", function () {
+                        window.sendAction("RESIGN");
+                    });
+                };
+            }
+
+            const drawBotBtn = document.getElementById("btn-draw-bot");
+            if (drawBotBtn) {
+                drawBotBtn.onclick = function () {
+                    window.showModal("🤖", "Cầu hòa", "Đánh với ta không có khái niệm cầu hòa đâu, ráng mà đánh chiến thắng đi!", "alert");
+                };
+            }
         }
     }
 
-    loadChatHistory();
-    window.resetTimer("WHITE");
+    const isGameReady = (whitePlayer !== "" && blackPlayer !== "") || isBotMode;
+
+    if (isGameReady) {
+        window.resetTimer("WHITE");
+    } else {
+        const oppTimer = document.getElementById("timer-opponent");
+        const youTimer = document.getElementById("timer-you");
+        if (oppTimer) oppTimer.innerText = DEFAULT_TIME + "s";
+        if (youTimer) youTimer.innerText = DEFAULT_TIME + "s";
+    }
 });

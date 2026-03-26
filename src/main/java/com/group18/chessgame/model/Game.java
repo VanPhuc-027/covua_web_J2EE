@@ -41,7 +41,7 @@ public class Game {
     @Transient
     private Board board = new Board();
 
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, fetch = jakarta.persistence.FetchType.LAZY)
     private List<Move> moveHistory = new ArrayList<>();
 
     @Column(columnDefinition = "VARCHAR(255) DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'")

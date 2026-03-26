@@ -6,11 +6,9 @@ import com.group18.chessgame.model.Player;
 import com.group18.chessgame.repository.GameRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
@@ -22,7 +20,6 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class GameConnectionService {
 
-    private final GameLogicService gameLogicService;
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate messagingTemplate;
 

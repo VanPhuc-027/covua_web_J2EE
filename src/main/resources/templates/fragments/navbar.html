@@ -1,35 +1,40 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<header th:fragment="navbar" class="top-navbar">
+<header th:fragment="navbar" class="top-navbar browser-style-nav">
+
   <div class="logo">
-    <h2 style="text-transform: uppercase; letter-spacing: 2px; font-weight: 900;">CHESS GAME</h2>
+    <h2 style="text-transform: uppercase; letter-spacing: 1px; font-weight: 900;">
+      <span class="logo-icon">♟️</span> <span class="logo-text">Chess Pro</span>
+    </h2>
   </div>
 
   <ul class="menu-items">
-    <li style="border-radius: 0;"><a th:href="@{/}" style="color: inherit; text-decoration: none; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Sảnh cờ</a></li>
-    <li style="border-radius: 0;"><a th:href="@{/settings}" style="color: inherit; text-decoration: none; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Cài đặt</a></li>
+    <li><a th:href="@{/}">Sảnh</a></li>
+    <li><a th:href="@{/settings}">Cài đặt</a></li>
   </ul>
 
-  <div class="header-right-group">
+  <div class="header-right-group header-right-group-compact">
+
     <div class="auth-buttons" th:if="${session.currentPlayer == null}">
-      <a th:href="@{/login}" class="btn-login" style="border-radius: 0; text-transform: uppercase; letter-spacing: 1px;">Đăng nhập</a>
-      <a th:href="@{/register}" class="btn-register" style="border-radius: 0; text-transform: uppercase; letter-spacing: 1px;">Đăng ký</a>
+      <a th:href="@{/login}" class="btn-login" style="border-radius: 4px; padding: 6px 12px; font-size: 12px;">Đăng nhập</a>
     </div>
 
     <a th:href="@{/admin/users}"
        th:if="${session.currentPlayer != null and session.currentPlayer.role == 'ROLE_ADMIN'}"
-       style="display: inline-block; padding: 10px 20px; margin-right: 15px; color: #f44336; border: 1px solid #f44336; border-radius: 5px; text-decoration: none; font-weight: bold; transition: all 0.3s;">
-       QUẢN TRỊ VIÊN
+       class="btn-admin-compact" title="Quản trị viên">
+      <span style="font-size: 16px; margin-top: 1px;">⚙️</span>
+      <span class="admin-text">ADMIN</span>
     </a>
 
-    <a th:href="@{/profile}" class="user-profile" th:if="${session.currentPlayer != null}" style="text-decoration: none; color: inherit; border-radius: 0; border: 1px solid rgba(255,255,255,0.2);">
+    <a th:href="@{/profile}" class="user-profile profile-compact" th:if="${session.currentPlayer != null}" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
       <div class="info" style="text-align: right;">
-        <span class="name" th:text="${session.currentPlayer.username}" style="text-transform: uppercase; letter-spacing: 1px; font-size: 13px;">USER</span>
-        <span class="elo" th:text="${session.currentPlayer.eloRating} + ' ELO'" style="letter-spacing: 1px;">1200 ELO</span>
+        <span class="name" th:text="${session.currentPlayer.username}" style="text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">USER</span>
+        <span class="elo" th:text="${session.currentPlayer.eloRating} + ' ELO'" style="letter-spacing: 1px; font-size: 10px; color: #aaa;">1200 ELO</span>
       </div>
-      <div class="avatar" style="font-size: 14px; font-weight: bold; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 10px; margin-left: 5px;">HỒ SƠ</div>
+      <div class="avatar" style="font-size: 18px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 8px; margin-left: 8px;">👤</div>
     </a>
+
   </div>
 </header>
 </body>

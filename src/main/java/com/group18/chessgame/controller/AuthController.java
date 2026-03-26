@@ -1,10 +1,8 @@
 package com.group18.chessgame.controller;
 
-import com.group18.chessgame.config.ActiveUserListener;
 import com.group18.chessgame.dto.LoginDTO;
 import com.group18.chessgame.dto.RegisterDTO;
 import com.group18.chessgame.model.Player;
-import com.group18.chessgame.service.GameService;
 import com.group18.chessgame.service.PlayerService;
 import com.group18.chessgame.enums.RegisterResult;
 import jakarta.servlet.http.HttpSession;
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final PlayerService playerService;
-    private final GameService gameService;
 
     @GetMapping("/register")
     public String showRegisterPage(Model model) {

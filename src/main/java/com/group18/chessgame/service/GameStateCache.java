@@ -8,9 +8,14 @@ import com.group18.chessgame.utils.FenUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import com.group18.chessgame.model.Move;
 
 /**
  * In-memory cache for active games to avoid round-trips to remote DB (Railway) on every click.
@@ -44,6 +49,7 @@ public class GameStateCache {
         return Optional.of(e);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Optional<Entry> loadFromDb(String gameId) {
         Game game = gameRepository.findById(gameId).orElse(null);
         if (game == null) return Optional.empty();
@@ -51,13 +57,18 @@ public class GameStateCache {
         Board board = new Board();
         FenUtils.fenToBoard(game.getCurrentFen(), board);
 
-        Entry entry = new Entry(gameId, game.getCurrentFen(), game.getCurrentTurn(), board);
+        List<String> history = game.getMoveHistory().stream()
+                .sorted(Comparator.comparingInt(Move::getMoveOrder))
+                .map(Move::getMoveNotation)
+                .collect(Collectors.toList());
+
+        Entry entry = new Entry(gameId, game.getCurrentFen(), game.getCurrentTurn(), board, history);
         cache.put(gameId, entry);
         return Optional.of(entry);
     }
 
-    public void put(String gameId, String fen, PieceColor currentTurn, Board board) {
-        cache.put(gameId, new Entry(gameId, fen, currentTurn, board));
+    public void put(String gameId, String fen, PieceColor currentTurn, Board board, List<String> moveHistory) {
+        cache.put(gameId, new Entry(gameId, fen, currentTurn, board, moveHistory));
     }
 
     private boolean isExpired(Entry e) {
@@ -75,13 +86,15 @@ public class GameStateCache {
         public String fen;
         public PieceColor currentTurn;
         public Board board;
+        public List<String> moveHistory;
         public volatile long lastAccessMs;
 
-        public Entry(String gameId, String fen, PieceColor currentTurn, Board board) {
+        public Entry(String gameId, String fen, PieceColor currentTurn, Board board, List<String> moveHistory) {
             this.gameId = gameId;
             this.fen = fen;
             this.currentTurn = currentTurn;
             this.board = board;
+            this.moveHistory = moveHistory != null ? new ArrayList<>(moveHistory) : new ArrayList<>();
             this.lastAccessMs = System.currentTimeMillis();
         }
     }

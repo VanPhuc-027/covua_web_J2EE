@@ -15,8 +15,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
+    padding: 20px 0;
 }
 
 .auth-container {
@@ -87,8 +88,10 @@ input {
    GIAO DIỆN HỒ SƠ
 ========================================= */
 .profile-container {
-    max-width: 450px !important;
+    max-width: 850px !important;
     padding: 2.5rem !important;
+    height: auto !important; /* Allow it to grow */
+    min-height: auto !important;
 }
 
 .profile-info { text-align: center; }
