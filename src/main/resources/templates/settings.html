@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <title>Cài đặt - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script>
+    (function () {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "light") {
+            document.documentElement.classList.add("light-mode-preload");
+        }
+    })();
+</script>
 </head>
 <body>
 
@@ -17,8 +25,8 @@
         </div>
 
         <div class="setting-item">
-            <div class="setting-label">
-                Âm thanh ván cờ
+            <div>
+                <span class="setting-label">Âm thanh ván cờ</span>
                 <span class="setting-desc">Phát tiếng khi di chuyển hoặc ăn quân</span>
             </div>
             <label class="switch">
@@ -28,8 +36,8 @@
         </div>
 
         <div class="setting-item">
-            <div class="setting-label">
-                Hiển thị gợi ý
+            <div>
+                <span class="setting-label">Hiển thị gợi ý</span>
                 <span class="setting-desc">Đánh dấu các ô hợp lệ khi bấm vào quân cờ</span>
             </div>
             <label class="switch">
@@ -38,52 +46,122 @@
             </label>
         </div>
 
-        <div class="setting-item" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+        <div class="setting-item">
             <div class="setting-label">
-                Chế độ tập trung
-                <span class="setting-desc">Làm mờ nền xung quanh bàn cờ</span>
+                Chế độ giao diện
+                <span class="setting-desc">Chuyển giữa giao diện sáng và tối</span>
             </div>
-            <label class="switch">
-                <input type="checkbox" id="toggleFocus">
-                <span class="slider"></span>
-            </label>
+
+            <select id="themeSelect" class="theme-select">
+                <option value="dark">Tối</option>
+                <option value="light">Sáng</option>
+            </select>
         </div>
 
-        <button onclick="saveSettings()" class="btn-submit-settings">LƯU CÀI ĐẶT</button>
+        <button type="button" class="save-settings-btn">
+            <span>Lưu cài đặt</span>
+        </button>
 
     </div>
 </main>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const soundEnabled = localStorage.getItem('chess_sound') !== 'false';
-        const hintsEnabled = localStorage.getItem('chess_hints') !== 'false';
-        const focusEnabled = localStorage.getItem('chess_focus') === 'true';
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleSound = document.getElementById("toggleSound");
+    const toggleHints = document.getElementById("toggleHints");
+    const toggleFocus = document.getElementById("toggleFocus");
+    const saveBtn = document.getElementById("saveSettingsBtn");
 
-        document.getElementById('toggleSound').checked = soundEnabled;
-        document.getElementById('toggleHints').checked = hintsEnabled;
-        document.getElementById('toggleFocus').checked = focusEnabled;
-    });
+    if (toggleSound) {
+        toggleSound.checked = localStorage.getItem("chess_sound") !== "false";
+    }
+
+    if (toggleHints) {
+        toggleHints.checked = localStorage.getItem("chess_hints") !== "false";
+    }
+
+    if (toggleFocus) {
+        toggleFocus.checked = localStorage.getItem("chess_focus") === "true";
+    }
 
     function saveSettings() {
-        const soundEnabled = document.getElementById('toggleSound').checked;
-        const hintsEnabled = document.getElementById('toggleHints').checked;
-        const focusEnabled = document.getElementById('toggleFocus').checked;
+        const soundEnabled = toggleSound ? toggleSound.checked : true;
+        const hintsEnabled = toggleHints ? toggleHints.checked : true;
+        const focusEnabled = toggleFocus ? toggleFocus.checked : false;
 
-        localStorage.setItem('chess_sound', soundEnabled);
-        localStorage.setItem('chess_hints', hintsEnabled);
-        localStorage.setItem('chess_focus', focusEnabled);
+        localStorage.setItem("chess_sound", soundEnabled);
+        localStorage.setItem("chess_hints", hintsEnabled);
+        localStorage.setItem("chess_focus", focusEnabled);
 
-        const btn = document.querySelector('.btn-submit-settings');
-        const originalText = btn.innerText;
-        btn.innerText = "ĐÃ LƯU ✓";
-        btn.style.backgroundColor = "#45a049";
+        if (focusEnabled) {
+            document.body.classList.add("focus-mode-active");
+        } else {
+            document.body.classList.remove("focus-mode-active");
+        }
 
-        setTimeout(() => {
-            btn.innerText = originalText;
-            btn.style.backgroundColor = "";
-        }, 1500);
+        if (soundEnabled) {
+            const testAudio = new Audio("/sounds/move-self.mp3");
+            testAudio.play().catch(function () {
+                console.warn("Không phát được âm thanh test.");
+            });
+        }
+
+        if (saveBtn) {
+            const originalText = saveBtn.innerText;
+            const originalBg = saveBtn.style.backgroundColor;
+
+            saveBtn.innerText = "ĐÃ LƯU ✓";
+            saveBtn.style.backgroundColor = "#45a049";
+
+            setTimeout(function () {
+                saveBtn.innerText = originalText;
+                saveBtn.style.backgroundColor = originalBg;
+            }, 1500);
+        }
     }
+
+    if (saveBtn) {
+        saveBtn.addEventListener("click", saveSettings);
+    }
+
+    window.saveSettings = saveSettings;
+});
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleSound = document.getElementById("toggleSound");
+    const toggleHints = document.getElementById("toggleHints");
+    const toggleFocus = document.getElementById("toggleFocus");
+    const saveBtn = document.getElementById("saveSettingsBtn");
+
+    if (toggleSound) {
+        toggleSound.checked = localStorage.getItem("chess_sound") !== "false";
+    }
+
+    if (toggleHints) {
+        toggleHints.checked = localStorage.getItem("chess_hints") !== "false";
+    }
+
+    if (toggleFocus) {
+        toggleFocus.checked = localStorage.getItem("chess_focus") === "true";
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener("click", function () {
+            localStorage.setItem("chess_sound", toggleSound ? toggleSound.checked : true);
+            localStorage.setItem("chess_hints", toggleHints ? toggleHints.checked : true);
+            localStorage.setItem("chess_focus", toggleFocus ? toggleFocus.checked : false);
+
+            alert("Đã lưu cài đặt thành công!");
+
+            if (toggleFocus && toggleFocus.checked) {
+                document.body.classList.add("focus-mode-active");
+            } else {
+                document.body.classList.remove("focus-mode-active");
+            }
+        });
+    }
+});
 </script>
+<script th:src="@{/js/settings.js}"></script>
+<script th:src="@{/js/theme.js}"></script>
 </body>
 </html>

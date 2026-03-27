@@ -5,8 +5,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const whitePlayer = window.WHITE_PLAYER || "";
     const blackPlayer = window.BLACK_PLAYER || "";
 
-    if (!window.CURRENT_GAME_ID && config.gameId) window.CURRENT_GAME_ID = config.gameId;
-    if (!window.CURRENT_USERNAME && config.username) window.CURRENT_USERNAME = config.username;
+    if (!window.CURRENT_GAME_ID && config.gameId) {
+        window.CURRENT_GAME_ID = config.gameId;
+    }
+    if (!window.CURRENT_USERNAME && config.username) {
+        window.CURRENT_USERNAME = config.username;
+    }
 
     const isWhite = currentUsername === whitePlayer;
     const isBlack = currentUsername === blackPlayer;
@@ -21,13 +25,38 @@ document.addEventListener("DOMContentLoaded", function () {
     window.validMoves = window.validMoves || {};
 
     const sounds = {
-        move: new Audio("/sounds/move-self.mp3"),
-        capture: new Audio("/sounds/capture.mp3"),
-        check: new Audio("/sounds/move-check.mp3"),
-        castle: new Audio("/sounds/castle.mp3"),
-        promote: new Audio("/sounds/promote.mp3"),
-        notify: new Audio("/sounds/notify.mp3")
-    };
+    move: new Audio("/sounds/move-self.mp3"),
+    capture: new Audio("/sounds/capture.mp3"),
+    check: new Audio("/sounds/move-check.mp3"),
+    castle: new Audio("/sounds/castle.mp3"),
+    promote: new Audio("/sounds/promote.mp3"),
+    notify: new Audio("/sounds/notify.mp3")
+};
+
+function isSoundEnabled() {
+    return localStorage.getItem("chess_sound") !== "false";
+}
+
+function playAudio(audio) {
+    if (!audio || !isSoundEnabled()) return;
+
+    try {
+        audio.currentTime = 0;
+        audio.play().catch(function (err) {
+            console.warn("Không phát được âm thanh:", err);
+        });
+    } catch (error) {
+        console.error("Lỗi phát âm thanh:", error);
+    }
+}
+
+function playMoveSound(isCheck, isPromote, isCapture, isCastle) {
+    if (isCheck) return playAudio(sounds.check);
+    if (isPromote) return playAudio(sounds.promote);
+    if (isCapture) return playAudio(sounds.capture);
+    if (isCastle) return playAudio(sounds.castle);
+    playAudio(sounds.move);
+}
 
     squares.forEach(function (square) {
         const row = square.dataset.row;
@@ -43,6 +72,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function isHintsEnabled() {
         return localStorage.getItem("chess_hints") !== "false";
+    }
+
+    function getSquareByPosition(row, col) {
+        return squareByPos.get(`${row},${col}`) || null;
     }
 
     function playAudio(audio) {
@@ -136,8 +169,10 @@ document.addEventListener("DOMContentLoaded", function () {
     async function highlightValidMoves(fromRow, fromCol) {
         clearMoveHighlights();
 
-        const originSquare = squareByPos.get(`${fromRow},${fromCol}`);
-        if (originSquare) originSquare.classList.add("selected");
+        const originSquare = getSquareByPosition(fromRow, fromCol);
+        if (originSquare) {
+            originSquare.classList.add("selected");
+        }
 
         if (!isHintsEnabled()) return;
 
@@ -149,9 +184,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     `/api/game/${gameId}/valid-moves?row=${encodeURIComponent(fromRow)}&col=${encodeURIComponent(fromCol)}`
                 );
                 if (!response.ok) return;
+
                 moves = await response.json();
+                window.validMoves[`${fromRow},${fromCol}`] = moves;
             } catch (error) {
-                console.error("Lỗi lấy nước đi hợp lệ:", error);
+                console.error("Lỗi lấy valid moves:", error);
                 return;
             }
         }
@@ -159,14 +196,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!Array.isArray(moves)) return;
 
         moves.forEach(function (move) {
-            const row = move && move[0];
-            const col = move && move[1];
-            const target = squareByPos.get(`${row},${col}`);
-            if (!target) return;
+            const row = move[0];
+            const col = move[1];
+            const targetSquare = getSquareByPosition(row, col);
 
-            target.classList.add("hint");
-            if (isPieceSquare(target)) target.classList.add("valid-capture");
-            else target.classList.add("valid-move");
+            if (!targetSquare) return;
+
+            targetSquare.classList.add("hint");
+
+            if (isPieceSquare(targetSquare)) {
+                targetSquare.classList.add("valid-capture");
+            } else {
+                targetSquare.classList.add("valid-move");
+            }
         });
     }
 
@@ -215,6 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             const data = await response.json();
+
             if (!data || !data.success) {
                 alert((data && data.message) || "Nước đi không hợp lệ");
                 if (typeof window.fetchAndRenderBoard === "function") {
@@ -233,7 +276,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (isBotMode && data.currentTurn === "BLACK") {
                 setTimeout(function () {
                     fetch(`/api/game/${gameId}/bot-move?depth=${botDepth}`, { method: "POST" })
-                        .catch(function (err) { console.error("Lỗi gọi Bot:", err); });
+                        .catch(function (err) {
+                            console.error("Lỗi gọi Bot:", err);
+                        });
                 }, 500);
             }
 
@@ -314,6 +359,7 @@ document.addEventListener("DOMContentLoaded", function () {
             newConfirmBtn.style.display = "none";
             newCancelBtn.style.display = "none";
             newOkBtn.style.display = "block";
+
             newOkBtn.onclick = function () {
                 closeOverlay(overlay);
                 if (typeof confirmCallback === "function") confirmCallback();
@@ -335,6 +381,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     `${baseMessage}<br><br><span style="color:#aaa;font-size:13px;">` +
                     `Chuyển về sảnh sau <b style="color:#fff">${remaining}s</b>...</span>`;
             }
+
             if (remaining <= 0) {
                 clearInterval(timer);
                 window.location.href = "/";
@@ -379,6 +426,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!moveList || !Array.isArray(history)) return;
 
         moveList.innerHTML = "";
+
         for (let i = 0; i < history.length; i += 2) {
             const row = document.createElement("div");
             row.className = "move-row";
@@ -394,6 +442,7 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
             moveList.appendChild(row);
         }
+
         moveList.scrollTop = moveList.scrollHeight;
     }
 
@@ -401,13 +450,16 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const response = await fetch(`/api/game/${gameId}/board`);
             if (!response.ok) return;
+
             const boardData = await response.json();
             renderBoardFromResponse(boardData);
         } catch (error) {
             console.error("Lỗi tải bàn cờ:", error);
+
             try {
                 const res = await fetch(`/api/game/${gameId}/state`);
                 if (!res.ok) return;
+
                 const data = await res.json();
                 if (data.board) renderBoardFromResponse(data.board);
                 if (typeof window.handleCheckStatus === "function") {
@@ -426,6 +478,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const response = await fetch(`/api/game/${gameId}/chat-history`);
             if (!response.ok) return;
+
             const history = await response.json();
             if (!Array.isArray(history)) return;
 
@@ -530,7 +583,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (statusSpan) {
                     statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${payload.message || ""}</span>`;
                 }
+
                 playAudio(sounds.notify);
+
                 window.showModal(
                     payload.action === "TIMEOUT" ? "⏰" : (payload.action === "RESIGN" ? "🏳️" : "🤝"),
                     "Kết Thúc Trận Đấu",
@@ -540,7 +595,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         window.location.href = "/";
                     }
                 );
+
                 window.scheduleReturnToLobby(5);
+
                 if (window.timerInterval) clearInterval(window.timerInterval);
                 clearMoveHighlights();
                 selectedSquare = null;
@@ -550,22 +607,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (payload.currentTurn) {
             window.resetTimer(payload.currentTurn);
+
             if (statusSpan && !payload.check && !payload.checkmate && !payload.action) {
                 const turnName = payload.currentTurn === "WHITE" ? "TRẮNG" : "ĐEN";
-                statusSpan.innerHTML = `Lượt của: <b style="color: var(--primary-color); text-shadow: 0 0 5px rgba(255,255,255,0.2)">${turnName}</b>`;
+                statusSpan.innerHTML =
+                    `Lượt của: <b style="color: var(--primary-color); text-shadow: 0 0 5px rgba(255,255,255,0.2)">${turnName}</b>`;
             }
         }
 
         if (payload.checkmate) {
             const resultMsg = `CHIẾU HẾT! Quân ${payload.winner === "WHITE" ? "Trắng" : "Đen"} giành chiến thắng!`;
+
             if (statusSpan) {
                 statusSpan.innerHTML = `<span style="color:#ff4d4d;font-weight:bold;">${resultMsg}</span>`;
             }
+
             if (window.timerInterval) clearInterval(window.timerInterval);
             playAudio(sounds.notify);
+
             window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", function () {
                 window.location.href = "/";
             });
+
             window.scheduleReturnToLobby(5);
 
             if (typeof window.renderChatMessage === "function") {
@@ -579,9 +642,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 statusSpan.innerHTML =
                     '<span style="color:#ffaa00;font-weight:bold;animation:pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>';
             }
+
             if (payload.currentTurn === myColor) {
                 playAudio(sounds.check);
             }
+
             if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
                 const checkedSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
                 if (checkedSquare) checkedSquare.classList.add("checked-king");
@@ -684,27 +749,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            if (
-                square.classList.contains("valid-move") ||
-                square.classList.contains("valid-capture") ||
-                square.classList.contains("hint")
-            ) {
-                const moved = await movePiece(selectedSquare.row, selectedSquare.col, row, col);
-                const promotionOverlay = document.getElementById("promotion-modal-overlay");
-                if (moved && (!promotionOverlay || promotionOverlay.style.display !== "flex")) {
-                    clearMoveHighlights();
-                    selectedSquare = null;
-                }
+            const clickedOwnPiece = isPieceSquare(square) && getSquarePieceColor(square) === myColor;
+
+            if (clickedOwnPiece) {
+                selectedSquare = { row: row, col: col };
+                await highlightValidMoves(row, col);
                 return;
             }
 
-            if (!isPieceSquare(square)) return;
+            if (isHintsEnabled()) {
+                const canMove =
+                    square.classList.contains("valid-move") ||
+                    square.classList.contains("valid-capture") ||
+                    square.classList.contains("hint");
 
-            const pieceColor = getSquarePieceColor(square);
-            if (myColor && pieceColor !== myColor) return;
+                if (!canMove) return;
+            }
 
-            selectedSquare = { row: row, col: col };
-            await highlightValidMoves(row, col);
+            const moved = await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+            const promotionOverlay = document.getElementById("promotion-modal-overlay");
+
+            if (moved && (!promotionOverlay || promotionOverlay.style.display !== "flex")) {
+                clearMoveHighlights();
+                selectedSquare = null;
+            }
         });
     });
 
@@ -767,13 +835,17 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!gameActions) {
             gameActions = document.createElement("div");
             gameActions.className = "game-actions";
-            gameActions.style.cssText = "display:flex;gap:10px;padding:15px;border-bottom:1px solid rgba(255,255,255,0.1);";
+            gameActions.style.cssText =
+                "display:flex;gap:10px;padding:15px;border-bottom:1px solid rgba(255,255,255,0.1);";
+
             gameActions.innerHTML = `
                 <button id="btn-draw-bot" style="flex:1; padding:10px; border-radius:8px; border:none; background:#607d8b; color:white; cursor:pointer; font-weight:bold; font-family:inherit; font-size:14px;">🤝 Cầu hòa</button>
                 <button id="btn-resign-bot" style="flex:1; padding:10px; border-radius:8px; border:none; background:#f44336; color:white; cursor:pointer; font-weight:bold; font-family:inherit; font-size:14px;">🏳️ Đầu hàng</button>
             `;
+
             const rightPanel = document.querySelector(".right-panel");
             const moveHistory = document.querySelector(".move-history");
+
             if (rightPanel && moveHistory) {
                 rightPanel.insertBefore(gameActions, moveHistory);
             }
@@ -781,16 +853,27 @@ document.addEventListener("DOMContentLoaded", function () {
             const resignBotBtn = document.getElementById("btn-resign-bot");
             if (resignBotBtn) {
                 resignBotBtn.onclick = function () {
-                    window.showModal("🏳️", "Đầu hàng", "Bạn chắc chắn muốn đầu hàng em Bot này?", "confirm", function () {
-                        window.sendAction("RESIGN");
-                    });
+                    window.showModal(
+                        "🏳️",
+                        "Đầu hàng",
+                        "Bạn chắc chắn muốn đầu hàng em Bot này?",
+                        "confirm",
+                        function () {
+                            window.sendAction("RESIGN");
+                        }
+                    );
                 };
             }
 
             const drawBotBtn = document.getElementById("btn-draw-bot");
             if (drawBotBtn) {
                 drawBotBtn.onclick = function () {
-                    window.showModal("🤖", "Cầu hòa", "Đánh với ta không có khái niệm cầu hòa đâu, ráng mà đánh chiến thắng đi!", "alert");
+                    window.showModal(
+                        "🤖",
+                        "Cầu hòa",
+                        "Đánh với ta không có khái niệm cầu hòa đâu, ráng mà đánh chiến thắng đi!",
+                        "alert"
+                    );
                 };
             }
         }
