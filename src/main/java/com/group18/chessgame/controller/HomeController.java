@@ -27,4 +27,8 @@ public class HomeController {
 
         return "index";
     }
+    @GetMapping("/guide")
+    public String guidePage() {
+        return "guide";
+    }
 }

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hướng dẫn chơi - Chess Pro</title>
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("chess_theme") || "dark";
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="guide-page">
+    <div class="guide-container">
+        <div class="guide-header">
+            <h1>HƯỚNG DẪN CHƠI CỜ VUA</h1>
+            <p>Trang này giúp người mới hiểu luật chơi cơ bản và cách di chuyển các quân cờ.</p>
+        </div>
+
+        <section class="guide-section">
+            <h2>1. Mục tiêu của trò chơi</h2>
+            <p>
+                Mục tiêu của cờ vua là chiếu hết vua của đối phương. Điều đó xảy ra khi vua bị tấn công
+                và không còn nước đi hợp lệ nào để thoát.
+            </p>
+        </section>
+
+        <section class="guide-section">
+            <h2>2. Cách di chuyển của từng quân</h2>
+
+            <div class="guide-grid">
+                <div class="guide-card">
+                    <h3>Vua</h3>
+                    <p>Di chuyển 1 ô theo mọi hướng.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Hậu</h3>
+                    <p>Di chuyển nhiều ô theo hàng, cột hoặc đường chéo.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Xe</h3>
+                    <p>Di chuyển nhiều ô theo hàng ngang hoặc dọc.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Tượng</h3>
+                    <p>Di chuyển nhiều ô theo đường chéo.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Mã</h3>
+                    <p>Di chuyển theo hình chữ L và có thể nhảy qua quân khác.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Tốt</h3>
+                    <p>
+                        Đi thẳng 1 ô, nước đầu có thể đi 2 ô. Ăn quân theo đường chéo 1 ô.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="guide-section">
+            <h2>3. Một số luật cơ bản</h2>
+            <ul class="guide-list">
+                <li>Không được đi quân khiến vua của mình bị chiếu.</li>
+                <li>Nếu vua bị tấn công, bạn phải tìm cách thoát chiếu.</li>
+                <li>Nếu không thể thoát chiếu, bạn thua vì bị chiếu hết.</li>
+                <li>Ván cờ có thể hòa trong một số trường hợp đặc biệt.</li>
+            </ul>
+        </section>
+
+        <section class="guide-section">
+            <h2>4. Khi nào ván cờ kết thúc?</h2>
+            <div class="guide-grid">
+                <div class="guide-card">
+                    <h3>Chiếu hết</h3>
+                    <p>Vua bị tấn công và không còn cách thoát.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Đầu hàng</h3>
+                    <p>Một người chơi chấp nhận thua.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Hết giờ</h3>
+                    <p>Người chơi hết thời gian sẽ thua.</p>
+                </div>
+
+                <div class="guide-card">
+                    <h3>Hòa</h3>
+                    <p>Do bí nước, thiếu quân chiếu hết, hoặc hai bên đồng ý hòa.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="guide-section">
+            <h2>5. Mẹo cho người mới</h2>
+            <ul class="guide-list">
+                <li>Ưu tiên kiểm soát trung tâm bàn cờ.</li>
+                <li>Phát triển mã và tượng sớm.</li>
+                <li>Đừng đưa hậu ra quá sớm.</li>
+                <li>Nhập thành sớm để bảo vệ vua.</li>
+                <li>Luôn quan sát quân đang bị đối thủ tấn công.</li>
+            </ul>
+        </section>
+
+        <div class="guide-actions">
+            <a th:href="@{/}" class="replay-btn">← Quay lại sảnh</a>
+        </div>
+    </div>
+</main>
+
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>
