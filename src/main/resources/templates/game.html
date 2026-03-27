@@ -3,18 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <title>Bàn Cờ - Chess Pro</title>
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("chess_theme") || "dark";
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+
     <link rel="stylesheet" th:href="@{/css/style.css}">
+
     <style>
-        body.focus-mode-active .top-navbar,
-        body.focus-mode-active .right-panel {
+        body.focus-mode .top-navbar,
+        body.focus-mode .right-panel {
             opacity: 0.1;
             pointer-events: none;
             transition: opacity 0.5s ease;
         }
 
-        body.focus-mode-active .board-container {
+        body.focus-mode .board-container {
             transform: scale(1.05);
             transition: transform 0.5s ease;
+        }
+
+        .board-container {
+            position: relative;
         }
 
         .square.hint {
@@ -22,25 +39,54 @@
         }
 
         .square.hint::after {
-            content: '';
+            content: "";
             position: absolute;
             width: 30%;
             height: 30%;
-            background: rgba(0, 255, 0, 0.4);
+            background: rgba(76, 175, 80, 0.45);
             border-radius: 50%;
             top: 35%;
             left: 35%;
         }
 
-        .board-container {
-            position: relative;
+        .game-layout-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-fixed {
+            flex-shrink: 0;
+        }
+
+        .moves-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 150px;
+        }
+
+        .moves-scroll {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-panel {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        .chat-scroll {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .game-actions {
             display: flex;
             gap: 10px;
             padding: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
         }
 
@@ -49,11 +95,17 @@
             padding: 10px;
             border-radius: 8px;
             border: none;
-            color: white;
+            color: #ffffff;
             cursor: pointer;
             font-weight: bold;
             font-family: inherit;
             font-size: 14px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
         }
 
         #btn-draw {
@@ -61,7 +113,42 @@
         }
 
         #btn-resign {
-            background: #f44336;
+            background: var(--danger);
+        }
+
+        .inline-form-reset {
+            margin: 0;
+        }
+
+        .inline-button-reset {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .danger-status {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+
+        .system-message {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .promo-icon {
+            width: 32px;
+            height: 32px;
+            vertical-align: middle;
+        }
+
+        .modal-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -74,16 +161,16 @@
 
     <ul class="menu-items">
         <li th:if="${game.status.name() == 'WAITING'}">
-            <form th:action="@{/game/cancel}" method="post" style="margin: 0;">
+            <form th:action="@{/game/cancel}" method="post" class="inline-form-reset">
                 <input type="hidden" name="gameId" th:value="${game.id}" />
-                <button type="submit" style="background:none; border:none; color:inherit; cursor:pointer;">
-                    🔙 Hủy phòng & Về sảnh
+                <button type="submit" class="inline-button-reset">
+                    🔙 Hủy phòng &amp; Về sảnh
                 </button>
             </form>
         </li>
 
         <li th:if="${game.status.name() == 'IN_PROGRESS'}">
-            <span style="color: #ff4d4d; font-weight: bold;">🚫 Trận đấu đang diễn ra</span>
+            <span class="danger-status">🚫 Trận đấu đang diễn ra</span>
         </li>
     </ul>
 
@@ -119,8 +206,8 @@
         </div>
     </div>
 
-    <aside class="right-panel" style="display: flex; flex-direction: column;">
-        <div class="game-info" style="flex-shrink: 0;">
+    <aside class="right-panel game-layout-panel">
+        <div class="game-info panel-fixed">
             <div class="player opponent">
                 <div class="avatar">🤖</div>
                 <div class="details">
@@ -147,19 +234,19 @@
             <button id="btn-resign" class="action-btn">🏳️ Đầu hàng</button>
         </div>
 
-        <div class="move-history" style="flex: 1; display: flex; flex-direction: column; min-height: 150px;">
-            <div class="history-header" style="flex-shrink: 0;">Lịch sử nước đi</div>
-            <div class="moves-list" style="flex: 1; overflow-y: auto;"></div>
+        <div class="move-history moves-panel">
+            <div class="history-header panel-fixed">Lịch sử nước đi</div>
+            <div class="moves-list moves-scroll"></div>
         </div>
 
-        <div class="chat-box" style="flex: 1.2; display: flex; flex-direction: column; min-height: 200px;">
-            <div class="chat-header" style="flex-shrink: 0;">Trò chuyện</div>
-            <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto;">
-                <div class="message system" style="text-align: center; font-size: 12px; color: #aaa; margin-bottom: 10px;">
+        <div class="chat-box chat-panel">
+            <div class="chat-header panel-fixed">Trò chuyện</div>
+            <div class="chat-messages chat-scroll" id="chat-messages">
+                <div class="message system system-message">
                     Chào mừng bạn đến với bàn cờ!
                 </div>
             </div>
-            <div class="chat-input" style="flex-shrink: 0;">
+            <div class="chat-input panel-fixed">
                 <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
                 <button id="btn-send-chat">Gửi</button>
             </div>
@@ -172,16 +259,16 @@
         <h3>Chọn quân phong cấp</h3>
         <div class="bot-modal-buttons">
             <button class="promo-btn btn-bot-diff" data-piece="queen">
-                <img id="promo-img-queen" src="" alt="Queen" style="width:32px;height:32px;vertical-align:middle;"> Hậu
+                <img id="promo-img-queen" src="" alt="Queen" class="promo-icon"> Hậu
             </button>
             <button class="promo-btn btn-bot-diff" data-piece="rook">
-                <img id="promo-img-rook" src="" alt="Rook" style="width:32px;height:32px;vertical-align:middle;"> Xe
+                <img id="promo-img-rook" src="" alt="Rook" class="promo-icon"> Xe
             </button>
             <button class="promo-btn btn-bot-diff" data-piece="bishop">
-                <img id="promo-img-bishop" src="" alt="Bishop" style="width:32px;height:32px;vertical-align:middle;"> Tượng
+                <img id="promo-img-bishop" src="" alt="Bishop" class="promo-icon"> Tượng
             </button>
             <button class="promo-btn btn-bot-diff" data-piece="knight">
-                <img id="promo-img-knight" src="" alt="Knight" style="width:32px;height:32px;vertical-align:middle;"> Mã
+                <img id="promo-img-knight" src="" alt="Knight" class="promo-icon"> Mã
             </button>
         </div>
     </div>
@@ -189,7 +276,7 @@
 
 <div id="game-modal-overlay" class="bot-modal-overlay">
     <div class="bot-modal">
-        <div id="game-modal-icon" style="font-size: 32px; margin-bottom: 10px;">🔔</div>
+        <div id="game-modal-icon" class="modal-icon">🔔</div>
         <h3 id="game-modal-title">Thông báo</h3>
         <p id="game-modal-message">Nội dung thông báo</p>
         <div class="bot-modal-buttons">
@@ -221,13 +308,16 @@
     window.BLACK_PLAYER = /*[[${game.blackPlayer != null ? game.blackPlayer.username : ''}]]*/ '';
 
     if (window.CHESS_CONFIG.isFocus) {
-        document.body.classList.add('focus-mode-active');
+        document.body.classList.add('focus-mode');
     }
 
-    window.playSound = function(type) {
+    window.playSound = function (type) {
         if (!window.CHESS_CONFIG.isSound) return;
+
         const sound = document.getElementById(type === 'capture' ? 'capture-sound' : 'move-sound');
-        if (sound) sound.play().catch(() => {});
+        if (sound) {
+            sound.play().catch(function () {});
+        }
     };
 </script>
 

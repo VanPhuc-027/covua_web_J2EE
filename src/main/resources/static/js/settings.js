@@ -1,43 +1,86 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const themeSelect = document.getElementById("themeSelect");
-    const saveButton = document.querySelector(".save-settings-btn, .save-btn, button[type='submit'], .settings-save-btn");
+    const toggleSound = document.getElementById("toggleSound");
+    const toggleHints = document.getElementById("toggleHints");
+    const toggleFocus = document.getElementById("toggleFocus");
+    const saveBtn = document.getElementById("saveSettingsBtn");
 
-    // Lấy theme đã lưu, mặc định là dark
-    const savedTheme = localStorage.getItem("theme") || "dark";
-
-    applyTheme(savedTheme);
-
-    if (themeSelect) {
-        themeSelect.value = savedTheme;
+    // Load trạng thái đã lưu
+    if (toggleSound) {
+        toggleSound.checked = localStorage.getItem("chess_sound") !== "false";
     }
 
-    // Nếu có nút lưu cài đặt
-    if (saveButton) {
-        saveButton.addEventListener("click", function (event) {
-            const selectedTheme = themeSelect ? themeSelect.value : "dark";
-            localStorage.setItem("theme", selectedTheme);
-            applyTheme(selectedTheme);
+    if (toggleHints) {
+        toggleHints.checked = localStorage.getItem("chess_hints") !== "false";
+    }
+
+    if (toggleFocus) {
+        toggleFocus.checked = localStorage.getItem("chess_focus") === "true";
+        applyFocusMode(toggleFocus.checked);
+    }
+
+    function applyFocusMode(enabled) {
+        if (enabled) {
+            document.body.classList.add("focus-mode");
+        } else {
+            document.body.classList.remove("focus-mode");
+        }
+    }
+
+    function saveSettings() {
+        const soundEnabled = toggleSound ? toggleSound.checked : true;
+        const hintsEnabled = toggleHints ? toggleHints.checked : true;
+        const focusEnabled = toggleFocus ? toggleFocus.checked : false;
+
+        localStorage.setItem("chess_sound", soundEnabled);
+        localStorage.setItem("chess_hints", hintsEnabled);
+        localStorage.setItem("chess_focus", focusEnabled);
+
+        applyFocusMode(focusEnabled);
+
+        // phát âm thanh test nếu bật âm thanh
+        if (soundEnabled) {
+            const testAudio = new Audio("/sounds/move-self.mp3");
+            testAudio.play().catch(function () {
+                console.warn("Không phát được âm thanh test.");
+            });
+        }
+
+        // hiệu ứng nút lưu
+        if (saveBtn) {
+            const textSpan = saveBtn.querySelector("span");
+            const originalText = textSpan ? textSpan.textContent : saveBtn.textContent;
+
+            if (textSpan) {
+                textSpan.textContent = "Đã lưu ✓";
+            } else {
+                saveBtn.textContent = "Đã lưu ✓";
+            }
+
+            saveBtn.disabled = true;
+
+            setTimeout(function () {
+                if (textSpan) {
+                    textSpan.textContent = originalText;
+                } else {
+                    saveBtn.textContent = originalText;
+                }
+                saveBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    // click nút lưu
+    if (saveBtn) {
+        saveBtn.addEventListener("click", saveSettings);
+    }
+
+    // đổi focus mode ngay khi gạt
+    if (toggleFocus) {
+        toggleFocus.addEventListener("change", function () {
+            applyFocusMode(toggleFocus.checked);
         });
     }
 
-    // Nếu muốn đổi ngay khi chọn, bỏ comment phần dưới
-    /*
-    if (themeSelect) {
-        themeSelect.addEventListener("change", function () {
-            const selectedTheme = themeSelect.value;
-            localStorage.setItem("theme", selectedTheme);
-            applyTheme(selectedTheme);
-        });
-    }
-    */
+    // cho file khác dùng nếu cần
+    window.saveSettings = saveSettings;
 });
-
-function applyTheme(theme) {
-    const body = document.body;
-
-    if (theme === "light") {
-        body.classList.add("light-mode");
-    } else {
-        body.classList.remove("light-mode");
-    }
-}

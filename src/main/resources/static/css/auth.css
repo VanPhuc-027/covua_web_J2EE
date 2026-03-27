@@ -1,172 +1,352 @@
+/* =========================================================
+   CHESS PRO - AUTH / PROFILE CSS
+========================================================= */
+
+/* =========================================================
+   THEME VARIABLES
+========================================================= */
 :root {
     --bg-color: #1a262b;
     --card-bg: #24343d;
     --primary-color: #4caf50;
     --primary-hover: #45a049;
     --text-color: #ffffff;
+    --text-soft: #cfd8dc;
+    --text-muted: #9aa8ad;
     --input-bg: #2c3e47;
     --border-color: #3d515a;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+
+    --success-color: #4caf50;
+    --success-bg: rgba(76, 175, 80, 0.1);
+    --success-border: rgba(76, 175, 80, 0.3);
+
+    --error-color: #f44336;
+    --error-bg: rgba(244, 67, 54, 0.1);
+    --error-border: rgba(244, 67, 54, 0.3);
+
+    --link-color: #4caf50;
+    --link-hover: #66bb6a;
+}
+
+html[data-theme="light"] {
+    --bg-color: #eef4fb;
+    --card-bg: #ffffff;
+    --primary-color: #4caf50;
+    --primary-hover: #43a047;
+    --text-color: #0f172a;
+    --text-soft: #334155;
+    --text-muted: #64748b;
+    --input-bg: #f8fafc;
+    --border-color: #d7dee7;
+    --shadow-color: rgba(15, 23, 42, 0.12);
+
+    --success-color: #2e7d32;
+    --success-bg: rgba(76, 175, 80, 0.08);
+    --success-border: rgba(76, 175, 80, 0.22);
+
+    --error-color: #d32f2f;
+    --error-bg: rgba(244, 67, 54, 0.08);
+    --error-border: rgba(244, 67, 54, 0.22);
+
+    --link-color: #2563eb;
+    --link-hover: #1d4ed8;
+}
+
+/* =========================================================
+   BASE
+========================================================= */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
 }
 
 body {
-    background-color: var(--bg-color);
+    background: var(--bg-color);
     color: var(--text-color);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    margin: 0;
     padding: 20px 0;
+    transition: background 0.25s ease, color 0.25s ease;
 }
 
+/* =========================================================
+   AUTH CONTAINER
+========================================================= */
 .auth-container {
-    background-color: var(--card-bg);
-    padding: 2rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color); /* Thêm viền phẳng */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Đổ bóng tĩnh, không phát sáng */
     width: 100%;
     max-width: 400px;
+    padding: 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-h2 { text-align: center; margin-bottom: 1.5rem; color: var(--text-color); }
+.auth-container h2 {
+    margin: 0 0 1.5rem;
+    text-align: center;
+    color: var(--text-color);
+}
 
-.form-group { margin-bottom: 1rem; }
+/* =========================================================
+   FORM
+========================================================= */
+.form-group {
+    margin-bottom: 1rem;
+}
 
-label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #ccc; }
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-soft);
+}
 
 input {
     width: 100%;
-    padding: 10px;
+    padding: 10px 12px;
     border-radius: 4px;
     border: 1px solid var(--border-color);
-    background-color: var(--input-bg);
-    color: white;
-    box-sizing: border-box;
+    background: var(--input-bg);
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.2s ease;
 }
 
+input::placeholder {
+    color: var(--text-muted);
+}
+
+input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+}
+
+/* =========================================================
+   SUBMIT BUTTON
+========================================================= */
 .btn-submit {
     width: 100%;
     padding: 12px;
-    background-color: var(--primary-color);
+    margin-top: 1rem;
+    background: var(--primary-color);
     border: none;
     border-radius: 4px;
-    color: white;
+    color: #ffffff;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 1rem;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
 }
 
-.btn-submit:hover { background-color: var(--primary-hover); }
+.btn-submit:hover {
+    background: var(--primary-hover);
+}
 
-.auth-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; }
-.auth-footer a { color: var(--primary-color); text-decoration: none; }
+.btn-submit:active {
+    transform: scale(0.98);
+}
 
-.password-wrapper { position: relative; display: flex; align-items: center; }
-.password-wrapper input { padding-right: 40px; }
+/* =========================================================
+   AUTH FOOTER
+========================================================= */
+.auth-footer {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-soft);
+}
+
+.auth-footer a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.auth-footer a:hover {
+    color: var(--link-hover);
+}
+
+/* =========================================================
+   PASSWORD TOGGLE
+========================================================= */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    padding-right: 44px;
+}
 
 .eye-btn {
     position: absolute;
     right: 10px;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
     color: #889296;
-    transition: color 0.2s;
     outline: none;
+    transition: color 0.2s ease;
 }
-.eye-btn:hover { color: var(--text-color); }
-.eye-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-/* =========================================
-   GIAO DIỆN HỒ SƠ
-========================================= */
+.eye-btn:hover {
+    color: var(--text-color);
+}
+
+.eye-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+
+/* =========================================================
+   AUTH ALERTS
+========================================================= */
+.auth-alert {
+    margin-bottom: 15px;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+    font-size: 0.95rem;
+}
+
+.auth-alert-success {
+    color: var(--success-color);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+}
+
+.auth-alert-error {
+    color: var(--error-color);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+}
+
+.auth-alert-bold {
+    font-weight: bold;
+}
+
+/* =========================================================
+   PROFILE PAGE
+========================================================= */
 .profile-container {
+    width: 100%;
     max-width: 850px !important;
     padding: 2.5rem !important;
-    height: auto !important; /* Allow it to grow */
+    height: auto !important;
     min-height: auto !important;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.profile-info { text-align: center; }
+.profile-info {
+    text-align: center;
+}
 
 .avatar-circle.flat-style {
-    background-color: var(--input-bg);
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
     width: 100px;
     height: 100px;
-    font-size: 2.5rem;
-    border-radius: 50%;
     margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    background: var(--input-bg);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 2.5rem;
     font-weight: bold;
 }
 
 .profile-title {
+    margin-top: 10px;
+    margin-bottom: 5px;
     color: var(--text-color);
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-top: 10px;
-    margin-bottom: 5px;
     font-size: 1.5rem;
 }
 
 .stats.flat-style {
     display: flex;
     justify-content: space-around;
+    margin: 20px 0;
+    padding: 20px 0;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
-    background-color: rgba(0, 0, 0, 0.15);
-    padding: 20px 0;
-    margin: 20px 0;
     border-radius: 6px;
+    background: rgba(0, 0, 0, 0.15);
 }
 
-.stat-item { text-align: center; }
+html[data-theme="light"] .stats.flat-style {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.stat-item {
+    text-align: center;
+}
+
 .stat-item span {
-    font-size: 0.8rem;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 1px;
     display: block;
     margin-top: 5px;
-}
-.stat-item strong.text-primary {
-    color: var(--primary-color);
-    font-size: 1.4rem;
-    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
+.stat-item strong.text-primary {
+    display: block;
+    color: var(--primary-color);
+    font-size: 1.4rem;
+}
+
+/* =========================================================
+   PROFILE BUTTONS / LINKS
+========================================================= */
 .btn-logout-flat {
+    display: block;
     width: 200px;
-    margin: 0 auto 15px auto;
+    margin: 0 auto 15px;
     padding: 12px;
-    background-color: transparent;
-    border: 1px solid #f44336;
+    box-sizing: border-box;
+    background: transparent;
+    border: 1px solid var(--error-color);
     border-radius: 4px;
-    color: #f44336;
+    color: var(--error-color);
     font-weight: bold;
     text-transform: uppercase;
     text-align: center;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    display: block;
     text-decoration: none;
-    box-sizing: border-box;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-logout-flat:hover {
-    background-color: #f44336;
-    color: #fff;
+    background: var(--error-color);
+    color: #ffffff;
 }
 
 .link-back-flat {
@@ -177,7 +357,32 @@ input {
     font-weight: bold;
     text-transform: uppercase;
     font-size: 0.85rem;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
 }
 
-.link-back-flat:hover { color: var(--text-color); }
+.link-back-flat:hover {
+    color: var(--text-color);
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 600px) {
+    body {
+        padding: 16px;
+    }
+
+    .auth-container,
+    .profile-container {
+        padding: 1.5rem !important;
+    }
+
+    .stats.flat-style {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .btn-logout-flat {
+        width: 100%;
+    }
+}

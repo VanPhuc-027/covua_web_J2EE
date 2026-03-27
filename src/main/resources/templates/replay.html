@@ -70,6 +70,16 @@
             font-weight: bold;
         }
     </style>
+    <script>
+    (function () {
+        try {
+            var theme = localStorage.getItem("chess_theme") || "dark";
+            document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+            document.documentElement.setAttribute("data-theme", "dark");
+        }
+    })();
+</script>
 </head>
 <body>
 <header class="top-navbar">
