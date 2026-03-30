@@ -49,7 +49,7 @@
             </label>
         </div>
 
-        <button onclick="saveSettings()" class="btn-submit-settings">LƯU CÀI ĐẶT</button>
+        <button type="button" onclick="saveSettings()" class="btn-submit-settings">LƯU CÀI ĐẶT</button>
 
     </div>
 </main>
@@ -75,14 +75,16 @@
         localStorage.setItem('chess_focus', focusEnabled);
 
         const btn = document.querySelector('.btn-submit-settings');
-        const originalText = btn.innerText;
-        btn.innerText = "ĐÃ LƯU ✓";
-        btn.style.backgroundColor = "#45a049";
+        if (btn) {
+            const originalText = btn.innerText;
+            btn.innerText = "ĐÃ LƯU ✓";
+            btn.style.backgroundColor = "#45a049";
 
-        setTimeout(() => {
-            btn.innerText = originalText;
-            btn.style.backgroundColor = "";
-        }, 1500);
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+            }, 1500);
+        }
     }
 </script>
 </body>

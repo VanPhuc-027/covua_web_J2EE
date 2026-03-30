@@ -13,7 +13,13 @@ document.addEventListener("DOMContentLoaded", function () {
     let selectedSquare = null;
     const squares = Array.from(document.querySelectorAll(".square"));
     const squareByPos = new Map();
+    function isSoundEnabled() {
+        return localStorage.getItem('chess_sound') !== 'false';
+    }
 
+    function isHintsEnabled() {
+        return localStorage.getItem('chess_hints') !== 'false';
+    }
     const soundMove = new Audio('/sounds/move-self.mp3');
     const soundCapture = new Audio('/sounds/capture.mp3');
     const soundCheck = new Audio('/sounds/move-check.mp3');
@@ -22,22 +28,29 @@ document.addEventListener("DOMContentLoaded", function () {
     const soundNotify = new Audio('/sounds/notify.mp3');
 
     function playMoveSound(isCheck, isPromote, isCapture, isCastle) {
-        try {
-            if (isCheck) {
-                soundCheck.play().catch(e => console.log(e));
-            } else if (isPromote) {
-                soundPromote.play().catch(e => console.log(e));
-            } else if (isCapture) {
-                soundCapture.play().catch(e => console.log(e));
-            } else if (isCastle) {
-                soundCastle.play().catch(e => console.log(e));
-            } else {
-                soundMove.play().catch(e => console.log(e));
-            }
-        } catch (err) {
-            console.error("Lỗi phát âm thanh:", err);
+    if (!isSoundEnabled()) return;
+
+    try {
+        if (isCheck) {
+            soundCheck.currentTime = 0;
+            soundCheck.play().catch(e => console.log(e));
+        } else if (isPromote) {
+            soundPromote.currentTime = 0;
+            soundPromote.play().catch(e => console.log(e));
+        } else if (isCapture) {
+            soundCapture.currentTime = 0;
+            soundCapture.play().catch(e => console.log(e));
+        } else if (isCastle) {
+            soundCastle.currentTime = 0;
+            soundCastle.play().catch(e => console.log(e));
+        } else {
+            soundMove.currentTime = 0;
+            soundMove.play().catch(e => console.log(e));
         }
+    } catch (err) {
+        console.error("Lỗi phát âm thanh:", err);
     }
+}
 
     if (isBlack) {
         const boardEl = document.querySelector('.chessboard');
@@ -209,7 +222,27 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+    async function isValidMoveTarget(fromRow, fromCol, toRow, toCol) {
+    let moves = window.validMoves ? window.validMoves[`${fromRow},${fromCol}`] : null;
 
+    if (!Array.isArray(moves)) {
+        try {
+            const res = await fetch(`/api/game/${gameId}/valid-moves?row=${fromRow}&col=${fromCol}`);
+            if (res.ok) {
+                moves = await res.json();
+            }
+        } catch (e) {
+            console.error("Failed to fetch valid moves from API:", e);
+            return false;
+        }
+    }
+
+    if (!Array.isArray(moves)) return false;
+
+    return moves.some(move =>
+        String(move[0]) === String(toRow) && String(move[1]) === String(toCol)
+    );
+}
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
         if (!myColor) return false;
 
@@ -298,48 +331,75 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     squares.forEach(square => {
-        square.addEventListener("click", async () => {
-            const row = square.dataset.row;
-            const col = square.dataset.col;
+    square.addEventListener("click", async () => {
+        const row = square.dataset.row;
+        const col = square.dataset.col;
 
-            if (!selectedSquare) {
-                if (!isPieceSquare(square)) return;
-                if (myColor) {
-                    const img = square.querySelector("img");
-                    const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-                    if (pieceColor !== myColor) return;
-                }
-                selectedSquare = {row, col};
-                square.classList.add("selected");
+        if (!selectedSquare) {
+            if (!isPieceSquare(square)) return;
+
+            if (myColor) {
+                const img = square.querySelector("img");
+                const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
+                if (pieceColor !== myColor) return;
+            }
+
+            clearHighlights();
+            selectedSquare = { row, col };
+            square.classList.add("selected");
+
+            if (isHintsEnabled()) {
                 await highlightValidMoves(row, col);
-            } else {
-                if (selectedSquare.row === row && selectedSquare.col === col) {
-                    clearHighlights();
-                    selectedSquare = null;
-                    return;
-                }
-                if (!square.classList.contains("valid-move") && !square.classList.contains("valid-capture")) {
-                    if (isPieceSquare(square)) {
-                        if (myColor) {
-                            const img = square.querySelector("img");
-                            const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-                            if (pieceColor !== myColor) return;
-                        }
-                        clearHighlights();
-                        selectedSquare = {row, col};
-                        square.classList.add("selected");
-                        await highlightValidMoves(row, col);
-                    }
-                    return;
-                }
-                await movePiece(selectedSquare.row, selectedSquare.col, row, col);
-                if (document.getElementById("promotion-modal-overlay").style.display !== "flex") {
-                    clearHighlights();
-                    selectedSquare = null;
+            }
+            return;
+        }
+
+        if (selectedSquare.row === row && selectedSquare.col === col) {
+            clearHighlights();
+            selectedSquare = null;
+            return;
+        }
+
+        const clickedOwnPiece = isPieceSquare(square) && (() => {
+            if (!myColor) return true;
+            const img = square.querySelector("img");
+            const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
+            return pieceColor === myColor;
+        })();
+
+        const validByClass =
+            square.classList.contains("valid-move") ||
+            square.classList.contains("valid-capture");
+
+        const validByData = await isValidMoveTarget(
+            selectedSquare.row,
+            selectedSquare.col,
+            row,
+            col
+        );
+
+        if (!validByClass && !validByData) {
+            if (clickedOwnPiece) {
+                clearHighlights();
+                selectedSquare = { row, col };
+                square.classList.add("selected");
+
+                if (isHintsEnabled()) {
+                    await highlightValidMoves(row, col);
                 }
             }
-        });
+            return;
+        }
+
+        await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+
+        const promotionOverlay = document.getElementById("promotion-modal-overlay");
+        if (!promotionOverlay || promotionOverlay.style.display !== "flex") {
+            clearHighlights();
+            selectedSquare = null;
+        }
     });
+});
 
     window.fetchAndRenderBoard = async function() {
         try {
@@ -473,7 +533,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (['RESIGN', 'TIMEOUT', 'ACCEPT_DRAW'].includes(payload.action)) {
                 if (statusSpan) statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${payload.message}</span>`;
                 let icon = payload.action === 'TIMEOUT' ? "⏰" : (payload.action === 'RESIGN' ? "🏳️" : "🤝");
-                soundNotify.play().catch(e => {});
+                if (isSoundEnabled()) {
+                    soundNotify.currentTime = 0;
+                    soundNotify.play().catch(e => {});
+                }
                 window.showModal(icon, "Kết thúc trận đấu", payload.message, "alert", () => window.location.href = "/");
                 window.scheduleReturnToLobby(5);
                 if (window.timerInterval) clearInterval(window.timerInterval);
@@ -496,7 +559,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const resultMsg = `CHIẾU HẾT! Quân ${payload.winner === 'WHITE' ? 'Trắng' : 'Đen'} giành chiến thắng!`;
             if (statusSpan) statusSpan.innerHTML = `<span style="color: #ff4d4d; font-weight: bold;">${resultMsg}</span>`;
             if (window.timerInterval) clearInterval(window.timerInterval);
-            soundNotify.play().catch(e => {});
+            if (isSoundEnabled()) {
+                soundNotify.currentTime = 0;
+                soundNotify.play().catch(e => {});
+            }
             window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", () => window.location.href = "/");
             window.scheduleReturnToLobby(5);
 
@@ -505,8 +571,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         } else if (payload.check) {
             if (statusSpan) statusSpan.innerHTML = `<span style="color: #ffaa00; font-weight: bold; animation: pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>`;
-            if (payload.currentTurn == myColor) {
-                soundCheck.play().catch(e=>{});
+            if (payload.currentTurn == myColor && isSoundEnabled()) {
+                soundCheck.currentTime = 0;
+                soundCheck.play().catch(e => {});
             }
             if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
                 const checkedKingSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
