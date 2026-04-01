@@ -18,7 +18,6 @@ public class AdminController {
 
     @GetMapping("/users")
     public String manageUsers(Model model, HttpSession session) {
-        // Tạm thời chưa có logic chặn quyền truy cập, ai có link cũng vào được
         Player currentPlayer = (Player) session.getAttribute("currentPlayer");
         if (currentPlayer == null) {
             return "redirect:/login";
