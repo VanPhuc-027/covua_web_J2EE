@@ -64,6 +64,16 @@ input {
 .auth-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; }
 .auth-footer a { color: var(--primary-color); text-decoration: none; }
 
+.auth-alert-box {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    text-align: center;
+}
+
 .password-wrapper { position: relative; display: flex; align-items: center; }
 .password-wrapper input { padding-right: 40px; }
 

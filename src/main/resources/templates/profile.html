@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Hồ sơ - Chess Pro</title>
     <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <link rel="stylesheet" th:href="@{/css/modals.css}">
 </head>
 <body>
 <div class="auth-container profile-container">
@@ -78,11 +79,38 @@
             </div>
         </div>
 
-        <a th:href="@{/logout}" class="btn-logout-flat" style="margin-top: 2rem;">Đăng xuất</a>
+        <!-- Logout Confirmation Toggle -->
+        <button type="button" onclick="showLogoutModal()" class="btn-logout-flat">Đăng xuất</button>
+
+        <!-- Logout Modal -->
+        <div id="logout-modal-overlay" class="modal-overlay">
+            <div class="modal-content logout-modal">
+                <div class="modal-icon">👋</div>
+                <h3 class="modal-title">Xác nhận đăng xuất?</h3>
+                <p class="modal-text">Bạn có chắc chắn muốn rời khỏi tài khoản không?</p>
+                <div class="modal-buttons">
+                    <button type="button" onclick="hideLogoutModal()" class="btn-modal-cancel">Hủy</button>
+                    <a th:href="@{/logout}" class="btn-modal-confirm">Đăng xuất</a>
+                </div>
+            </div>
+        </div>
 
         <a th:href="@{/}" class="link-back-flat">
             ← Quay lại bàn cờ
         </a>
+
+        <script>
+            function showLogoutModal() {
+                const modal = document.getElementById('logout-modal-overlay');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.style.opacity = '1', 10);
+            }
+            function hideLogoutModal() {
+                const modal = document.getElementById('logout-modal-overlay');
+                modal.style.opacity = '0';
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        </script>
     </div>
 </div>
 </body>

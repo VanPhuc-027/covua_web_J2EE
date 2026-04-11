@@ -1,20 +1,56 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const registerForm = document.getElementById('registerForm');
-    
+
     if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
+        registerForm.addEventListener('submit', function (e) {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.querySelector('input[name="email"]').value.trim();
             const password = document.getElementById('regPassword').value;
             const confirm = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirm) {
+
+            if (username.length < 3) {
                 e.preventDefault();
-                alert('Mật khẩu xác nhận không khớp!');
+                showAuthError('Tên người dùng phải có ít nhất 3 ký tự!');
                 return;
             }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                e.preventDefault();
+                showAuthError('Email không đúng định dạng!');
+                return;
+            }
+
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                e.preventDefault();
+                showAuthError('Mật khẩu phải có nhất 8 ký tự, gồm ít nhất một chữ viết hoa và một chữ số!');
+                return;
+            }
+
+            if (password !== confirm) {
+                e.preventDefault();
+                showAuthError('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
             console.log("Dữ liệu hợp lệ, đang gửi đăng ký...");
         });
     }
 });
+
+function showAuthError(message) {
+    const errorDiv = document.getElementById('js-error');
+    const errorMsg = document.getElementById('js-error-msg');
+    if (errorDiv && errorMsg) {
+        errorMsg.textContent = message;
+        errorDiv.style.display = 'block';
+        // Cuộn lên đầu để người dùng thấy lỗi
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        alert(message); // Fallback
+    }
+}
 
 function togglePassword(inputId, btnElement) {
     const input = document.getElementById(inputId);
