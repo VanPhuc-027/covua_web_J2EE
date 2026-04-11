@@ -28,38 +28,44 @@ document.addEventListener("DOMContentLoaded", function () {
     const soundNotify = new Audio('/sounds/notify.mp3');
 
     function playMoveSound(isCheck, isPromote, isCapture, isCastle) {
-    if (!isSoundEnabled()) return;
+        if (!isSoundEnabled()) return;
 
-    try {
-        if (isCheck) {
-            soundCheck.currentTime = 0;
-            soundCheck.play().catch(e => console.log(e));
-        } else if (isPromote) {
-            soundPromote.currentTime = 0;
-            soundPromote.play().catch(e => console.log(e));
-        } else if (isCapture) {
-            soundCapture.currentTime = 0;
-            soundCapture.play().catch(e => console.log(e));
-        } else if (isCastle) {
-            soundCastle.currentTime = 0;
-            soundCastle.play().catch(e => console.log(e));
-        } else {
-            soundMove.currentTime = 0;
-            soundMove.play().catch(e => console.log(e));
+        try {
+            if (isCheck) {
+                soundCheck.currentTime = 0;
+                soundCheck.play().catch(e => console.log(e));
+            } else if (isPromote) {
+                soundPromote.currentTime = 0;
+                soundPromote.play().catch(e => console.log(e));
+            } else if (isCapture) {
+                soundCapture.currentTime = 0;
+                soundCapture.play().catch(e => console.log(e));
+            } else if (isCastle) {
+                soundCastle.currentTime = 0;
+                soundCastle.play().catch(e => console.log(e));
+            } else {
+                soundMove.currentTime = 0;
+                soundMove.play().catch(e => console.log(e));
+            }
+        } catch (err) {
+            console.error("Lỗi phát âm thanh:", err);
         }
-    } catch (err) {
-        console.error("Lỗi phát âm thanh:", err);
     }
-}
 
     if (isBlack) {
         const boardEl = document.querySelector('.chessboard');
         if (boardEl) boardEl.classList.add('flipped');
     }
 
-    window.showModal = function(icon, title, message, type, confirmCallback) {
+    window.showModal = function (icon, title, message, type, confirmCallback, cancelCallback) {
         const overlay = document.getElementById("game-modal-overlay");
         if (!overlay) return;
+
+        // Clear any pending close timer to prevent overriding new modal
+        if (overlay.dataset.timeoutId) {
+            clearTimeout(parseInt(overlay.dataset.timeoutId));
+            delete overlay.dataset.timeoutId;
+        }
 
         document.getElementById("game-modal-icon").innerText = icon;
         document.getElementById("game-modal-title").innerText = title;
@@ -77,10 +83,18 @@ document.addEventListener("DOMContentLoaded", function () {
         btnCancel.parentNode.replaceChild(newCancel, btnCancel);
         btnOk.parentNode.replaceChild(newOk, btnOk);
 
-        const closeModal = () => {
+        const closeModal = (immediate = false) => {
             overlay.style.opacity = "0";
             overlay.style.pointerEvents = "none";
-            setTimeout(() => overlay.style.display = "none", 300);
+            if (immediate) {
+                overlay.style.display = "none";
+            } else {
+                const timeoutId = setTimeout(() => {
+                    overlay.style.display = "none";
+                    delete overlay.dataset.timeoutId;
+                }, 300);
+                overlay.dataset.timeoutId = timeoutId;
+            }
         };
 
         if (type === "confirm") {
@@ -88,23 +102,23 @@ document.addEventListener("DOMContentLoaded", function () {
             newCancel.style.display = "block";
             newOk.style.display = "none";
 
-            newConfirm.onclick = () => { closeModal(); if(confirmCallback) confirmCallback(); };
-            newCancel.onclick = () => { closeModal(); };
+            newConfirm.onclick = () => { closeModal(); if (confirmCallback) confirmCallback(); };
+            newCancel.onclick = () => { closeModal(); if (cancelCallback) cancelCallback(); };
         } else {
             newConfirm.style.display = "none";
             newCancel.style.display = "none";
             newOk.style.display = "block";
 
-            newOk.onclick = () => { closeModal(); if(confirmCallback) confirmCallback(); };
+            newOk.onclick = () => { closeModal(); if (confirmCallback) confirmCallback(); };
         }
 
         overlay.style.display = "flex";
-        void overlay.offsetWidth;
+        void overlay.offsetWidth; // Force reflow
         overlay.style.opacity = "1";
         overlay.style.pointerEvents = "auto";
     };
 
-    window.scheduleReturnToLobby = function(delaySec) {
+    window.scheduleReturnToLobby = function (delaySec) {
         let remaining = delaySec || 5;
         const msgEl = document.getElementById("game-modal-message");
         const baseMsg = msgEl ? msgEl.innerText : "";
@@ -223,26 +237,26 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     async function isValidMoveTarget(fromRow, fromCol, toRow, toCol) {
-    let moves = window.validMoves ? window.validMoves[`${fromRow},${fromCol}`] : null;
+        let moves = window.validMoves ? window.validMoves[`${fromRow},${fromCol}`] : null;
 
-    if (!Array.isArray(moves)) {
-        try {
-            const res = await fetch(`/api/game/${gameId}/valid-moves?row=${fromRow}&col=${fromCol}`);
-            if (res.ok) {
-                moves = await res.json();
+        if (!Array.isArray(moves)) {
+            try {
+                const res = await fetch(`/api/game/${gameId}/valid-moves?row=${fromRow}&col=${fromCol}`);
+                if (res.ok) {
+                    moves = await res.json();
+                }
+            } catch (e) {
+                console.error("Failed to fetch valid moves from API:", e);
+                return false;
             }
-        } catch (e) {
-            console.error("Failed to fetch valid moves from API:", e);
-            return false;
         }
+
+        if (!Array.isArray(moves)) return false;
+
+        return moves.some(move =>
+            String(move[0]) === String(toRow) && String(move[1]) === String(toCol)
+        );
     }
-
-    if (!Array.isArray(moves)) return false;
-
-    return moves.some(move =>
-        String(move[0]) === String(toRow) && String(move[1]) === String(toCol)
-    );
-}
     async function movePiece(fromRow, fromCol, toRow, toCol, promotion = null) {
         if (!myColor) return false;
 
@@ -331,55 +345,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     squares.forEach(square => {
-    square.addEventListener("click", async () => {
-        const row = square.dataset.row;
-        const col = square.dataset.col;
+        square.addEventListener("click", async () => {
+            const row = square.dataset.row;
+            const col = square.dataset.col;
 
-        if (!selectedSquare) {
-            if (!isPieceSquare(square)) return;
+            if (!selectedSquare) {
+                if (!isPieceSquare(square)) return;
 
-            if (myColor) {
-                const img = square.querySelector("img");
-                const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-                if (pieceColor !== myColor) return;
-            }
+                if (myColor) {
+                    const img = square.querySelector("img");
+                    const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
+                    if (pieceColor !== myColor) return;
+                }
 
-            clearHighlights();
-            selectedSquare = { row, col };
-            square.classList.add("selected");
-
-            if (isHintsEnabled()) {
-                await highlightValidMoves(row, col);
-            }
-            return;
-        }
-
-        if (selectedSquare.row === row && selectedSquare.col === col) {
-            clearHighlights();
-            selectedSquare = null;
-            return;
-        }
-
-        const clickedOwnPiece = isPieceSquare(square) && (() => {
-            if (!myColor) return true;
-            const img = square.querySelector("img");
-            const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
-            return pieceColor === myColor;
-        })();
-
-        const validByClass =
-            square.classList.contains("valid-move") ||
-            square.classList.contains("valid-capture");
-
-        const validByData = await isValidMoveTarget(
-            selectedSquare.row,
-            selectedSquare.col,
-            row,
-            col
-        );
-
-        if (!validByClass && !validByData) {
-            if (clickedOwnPiece) {
                 clearHighlights();
                 selectedSquare = { row, col };
                 square.classList.add("selected");
@@ -387,21 +365,57 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (isHintsEnabled()) {
                     await highlightValidMoves(row, col);
                 }
+                return;
             }
-            return;
-        }
 
-        await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+            if (selectedSquare.row === row && selectedSquare.col === col) {
+                clearHighlights();
+                selectedSquare = null;
+                return;
+            }
 
-        const promotionOverlay = document.getElementById("promotion-modal-overlay");
-        if (!promotionOverlay || promotionOverlay.style.display !== "flex") {
-            clearHighlights();
-            selectedSquare = null;
-        }
+            const clickedOwnPiece = isPieceSquare(square) && (() => {
+                if (!myColor) return true;
+                const img = square.querySelector("img");
+                const pieceColor = img && img.getAttribute("src").includes("white_") ? "WHITE" : "BLACK";
+                return pieceColor === myColor;
+            })();
+
+            const validByClass =
+                square.classList.contains("valid-move") ||
+                square.classList.contains("valid-capture");
+
+            const validByData = await isValidMoveTarget(
+                selectedSquare.row,
+                selectedSquare.col,
+                row,
+                col
+            );
+
+            if (!validByClass && !validByData) {
+                if (clickedOwnPiece) {
+                    clearHighlights();
+                    selectedSquare = { row, col };
+                    square.classList.add("selected");
+
+                    if (isHintsEnabled()) {
+                        await highlightValidMoves(row, col);
+                    }
+                }
+                return;
+            }
+
+            await movePiece(selectedSquare.row, selectedSquare.col, row, col);
+
+            const promotionOverlay = document.getElementById("promotion-modal-overlay");
+            if (!promotionOverlay || promotionOverlay.style.display !== "flex") {
+                clearHighlights();
+                selectedSquare = null;
+            }
+        });
     });
-});
 
-    window.fetchAndRenderBoard = async function() {
+    window.fetchAndRenderBoard = async function () {
         try {
             const res = await fetch(`/api/game/${gameId}/state`);
             if (!res.ok) return;
@@ -450,7 +464,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    window.renderChatMessage = function(chatMessage) {
+    window.renderChatMessage = function (chatMessage) {
         const messageContainer = document.getElementById("chat-messages");
         if (chatMessage.type === "SYSTEM") {
             const sysMsg = document.createElement("div");
@@ -496,7 +510,7 @@ document.addEventListener("DOMContentLoaded", function () {
         moveList.scrollTop = moveList.scrollHeight;
     }
 
-    window.handleCheckStatus = function(payload) {
+    window.handleCheckStatus = function (payload) {
         document.querySelectorAll(".square.checked-king").forEach(el => el.classList.remove("checked-king"));
         const statusSpan = document.querySelector(".match-status span");
 
@@ -535,7 +549,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 let icon = payload.action === 'TIMEOUT' ? "⏰" : (payload.action === 'RESIGN' ? "🏳️" : "🤝");
                 if (isSoundEnabled()) {
                     soundNotify.currentTime = 0;
-                    soundNotify.play().catch(e => {});
+                    soundNotify.play().catch(e => { });
                 }
                 window.showModal(icon, "Kết thúc trận đấu", payload.message, "alert", () => window.location.href = "/");
                 window.scheduleReturnToLobby(5);
@@ -561,7 +575,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (window.timerInterval) clearInterval(window.timerInterval);
             if (isSoundEnabled()) {
                 soundNotify.currentTime = 0;
-                soundNotify.play().catch(e => {});
+                soundNotify.play().catch(e => { });
             }
             window.showModal("🏆", "Chiếu hết!", resultMsg, "alert", () => window.location.href = "/");
             window.scheduleReturnToLobby(5);
@@ -573,7 +587,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (statusSpan) statusSpan.innerHTML = `<span style="color: #ffaa00; font-weight: bold; animation: pulse-text 1s infinite alternate;">ĐANG BỊ CHIẾU TƯỚNG!</span>`;
             if (payload.currentTurn == myColor && isSoundEnabled()) {
                 soundCheck.currentTime = 0;
-                soundCheck.play().catch(e => {});
+                soundCheck.play().catch(e => { });
             }
             if (payload.kingRow !== undefined && payload.kingCol !== undefined) {
                 const checkedKingSquare = squareByPos.get(`${payload.kingRow},${payload.kingCol}`);
@@ -588,15 +602,15 @@ document.addEventListener("DOMContentLoaded", function () {
     window.currentTurn = 'WHITE';
     window.isPaused = false;
 
-    window.pauseTimer = function() {
+    window.pauseTimer = function () {
         window.isPaused = true;
     };
 
-    window.resumeTimer = function() {
+    window.resumeTimer = function () {
         window.isPaused = false;
     };
 
-    window.resetTimer = function(newTurn) {
+    window.resetTimer = function (newTurn) {
         if (window.timerInterval) clearInterval(window.timerInterval);
         window.currentTurn = newTurn || window.currentTurn;
         window.timerSeconds = DEFAULT_TIME;
@@ -637,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    window.sendAction = function(actionType) {
+    window.sendAction = function (actionType) {
         if (!myColor) {
             console.warn("Chỉ người chơi mới có thể thực hiện hành động này.");
             return;
@@ -649,22 +663,32 @@ document.addEventListener("DOMContentLoaded", function () {
         }).catch(e => console.error("Lỗi khi gửi hành động:", e));
     };
 
-    const resignBtn = document.getElementById('btn-resign');
-    if (resignBtn) {
-        resignBtn.onclick = () => {
-            window.showModal("🏳️", "Đầu hàng", "Bạn có chắc chắn muốn đầu hàng không?", "confirm", () => {
-                window.sendAction("RESIGN");
-            });
-        };
+    function setupActionButtons() {
+        const resignBtn = document.getElementById('btn-resign');
+        const drawBtn = document.getElementById('btn-draw');
+
+        if (resignBtn) {
+            resignBtn.onclick = () => {
+                const message = isBotMode ? "Bạn chắc chắn muốn đầu hàng em Bot này?" : "Bạn có chắc chắn muốn đầu hàng không?";
+                window.showModal("🏳️", "Đầu hàng", message, "confirm", () => {
+                    window.sendAction("RESIGN");
+                });
+            };
+        }
+
+        if (drawBtn) {
+            drawBtn.onclick = () => {
+                if (isBotMode) {
+                    window.showModal("🤖", "Cầu hòa", "Đánh với Ta không có khái niệm cầu hòa đâu, ráng mà dánh chiến thắng đi!", "alert");
+                } else {
+                    window.sendAction("OFFER_DRAW");
+                    window.showModal("📩", "Đã Gửi", "Đã gửi lời mời cầu hòa tới đối thủ.", "alert");
+                }
+            };
+        }
     }
 
-    const drawBtn = document.getElementById('btn-draw');
-    if (drawBtn) {
-        drawBtn.onclick = () => {
-            window.sendAction("OFFER_DRAW");
-            window.showModal("📩", "Đã Gửi", "Đã gửi lời mời cầu hòa tới đối thủ.", "alert");
-        };
-    }
+    setupActionButtons();
 
     // GIAO DIỆN CHO BOT
     if (isBotMode) {
@@ -682,27 +706,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const cancelForm = document.querySelector(".menu-items form[action='/game/cancel']");
         if (cancelForm) cancelForm.style.display = 'none';
-
-        let gameActions = document.querySelector(".game-actions");
-        if (!gameActions) {
-            gameActions = document.createElement("div");
-            gameActions.className = "game-actions";
-            gameActions.style.cssText = "display: flex; gap: 10px; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);";
-            gameActions.innerHTML = `
-                <button id="btn-draw" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #607d8b; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🤝 Cầu hòa</button>
-                <button id="btn-resign" style="flex:1; padding: 10px; border-radius: 8px; border: none; background: #f44336; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px;">🏳️ Đầu hàng</button>
-            `;
-            const rightPanel = document.querySelector(".right-panel");
-            const moveHistory = document.querySelector(".move-history");
-            rightPanel.insertBefore(gameActions, moveHistory);
-
-            document.getElementById('btn-resign').onclick = () => {
-                window.showModal("🏳️", "Đầu hàng", "Bạn chắc chắn muốn đầu hàng em Bot này?", "confirm", () => window.sendAction("RESIGN"));
-            };
-            document.getElementById('btn-draw').onclick = () => {
-                window.showModal("🤖", "Cầu hòa", "Đánh với Ta không có khái niệm cầu hòa đâu, ráng mà dánh chiến thắng đi!", "alert");
-            };
-        }
     }
 
     const isGameReady = (window.WHITE_PLAYER !== '' && window.BLACK_PLAYER !== '') || isBotMode;
