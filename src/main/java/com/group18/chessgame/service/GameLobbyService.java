@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import com.group18.chessgame.dto.GameHistoryDTO;
 
@@ -33,28 +32,32 @@ public class GameLobbyService {
     private final GameStateCache gameStateCache;
 
     public Game createGame(Player creator, GameMode gameMode) {
-        Game game = new Game (
+        Game game = new Game(
                 creator,
                 null,
-                gameMode
-        );
+                gameMode);
         game.setStartedAt(java.time.LocalDateTime.now());
         game.setCurrentFen(FenUtils.boardToFen(new Board()));
         Game savedGame = gameRepository.save(game);
-        
-        // Cache eagerly to completely bypass DB queries for the subsequent `/state` fetch
-        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(), new java.util.ArrayList<>());
-        
+
+        // Cache eagerly to completely bypass DB queries for the subsequent `/state`
+        // fetch
+        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(),
+                new java.util.ArrayList<>());
+
         messagingTemplate.convertAndSend("/topic/lobby", "RELOAD_LOBBY:" + creator.getUsername());
         return savedGame;
     }
 
     public Game joinGame(String gameId, Player player) {
         Game game = gameRepository.findById(gameId).orElse(null);
-        if (game == null) return null;
+        if (game == null)
+            return null;
 
-        boolean isWhite = game.getWhitePlayer() != null && game.getWhitePlayer().getUsername().equals(player.getUsername());
-        boolean isBlack = game.getBlackPlayer() != null && game.getBlackPlayer().getUsername().equals(player.getUsername());
+        boolean isWhite = game.getWhitePlayer() != null
+                && game.getWhitePlayer().getUsername().equals(player.getUsername());
+        boolean isBlack = game.getBlackPlayer() != null
+                && game.getBlackPlayer().getUsername().equals(player.getUsername());
         if (isWhite || isBlack) {
             return game;
         }
@@ -76,7 +79,8 @@ public class GameLobbyService {
 
     public Game finishGame(String gameId, GameResult gameResult, GameTermination termination) {
         Game game = gameRepository.findById(gameId).orElse(null);
-        if (game == null) return null;
+        if (game == null)
+            return null;
         game.setStatus(GameStatus.FINISHED);
         game.setResult(gameResult);
         game.setTermination(termination);
@@ -105,7 +109,8 @@ public class GameLobbyService {
         game.setCurrentFen(FenUtils.boardToFen(new Board()));
         Game savedGame = gameRepository.save(game);
 
-        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(), new java.util.ArrayList<>());
+        gameStateCache.put(savedGame.getId(), savedGame.getCurrentFen(), savedGame.getCurrentTurn(), new Board(),
+                new java.util.ArrayList<>());
         return savedGame;
     }
 
@@ -113,13 +118,15 @@ public class GameLobbyService {
         Player whitePlayer = game.getWhitePlayer();
         Player blackPlayer = game.getBlackPlayer();
 
-        if (whitePlayer == null || blackPlayer == null) return;
+        if (whitePlayer == null || blackPlayer == null)
+            return;
 
         if ("BOT_FURINA".equals(whitePlayer.getUsername()) || "BOT_FURINA".equals(blackPlayer.getUsername())) {
             return;
         }
 
-        double expectedWhite = 1.0 / (1 + Math.pow(10, (blackPlayer.getEloRating() - whitePlayer.getEloRating()) / 400.0));
+        double expectedWhite = 1.0
+                / (1 + Math.pow(10, (blackPlayer.getEloRating() - whitePlayer.getEloRating()) / 400.0));
         double expectedBlack = 1.0 - expectedWhite;
 
         int k = 32;
@@ -149,6 +156,7 @@ public class GameLobbyService {
         playerRepository.save(whitePlayer);
         playerRepository.save(blackPlayer);
     }
+
     public Game getGame(String gameId) {
         return gameRepository.findById(gameId).orElse(null);
     }
@@ -165,15 +173,16 @@ public class GameLobbyService {
         Page<Game> gamesPage = gameRepository.findGameHistory(playerId, pageable);
         List<GameHistoryDTO> dtos = gamesPage.getContent().stream().map(game -> {
             boolean isWhite = game.getWhitePlayer().getId() == playerId;
-            String opponentName = isWhite ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "BOT_FURINA")
-                                         : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "BOT_FURINA");
+            String opponentName = isWhite
+                    ? (game.getBlackPlayer() != null ? game.getBlackPlayer().getUsername() : "BOT_FURINA")
+                    : (game.getWhitePlayer() != null ? game.getWhitePlayer().getUsername() : "BOT_FURINA");
             int eloChange = isWhite ? game.getWhiteEloChange() : game.getBlackEloChange();
 
             String outcome;
             if (game.getResult() == GameResult.DRAW) {
                 outcome = "Hòa";
             } else if ((isWhite && game.getResult() == GameResult.WHITE_WINS) ||
-                       (!isWhite && game.getResult() == GameResult.BLACK_WINS)) {
+                    (!isWhite && game.getResult() == GameResult.BLACK_WINS)) {
                 outcome = "Thắng";
             } else {
                 outcome = "Thua";
