@@ -106,7 +106,7 @@
     text-align: right;
 }
 
-/* COMPACT / BROWSER STYLE NAVBAR */
+
 .browser-style-nav {
     height: 56px !important;
     padding: 0 15px !important;
@@ -148,7 +148,7 @@
     border-radius: 20px !important;
 }
 
-/* RESPONSIVE NAVBAR */
+
 @media (max-width: 800px) {
     .browser-style-nav .logo-text {
         display: none;

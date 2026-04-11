@@ -42,14 +42,14 @@
 </header>
 
 <main class="main-content">
-    <!-- BOARD FRAGMENT -->
+
     <div th:replace="~{fragments/game_fragments :: board}"></div>
 
-    <!-- SIDEBAR FRAGMENT -->
+
     <div th:replace="~{fragments/game_fragments :: sidebar}"></div>
 </main>
 
-<!-- MODALS FRAGMENT -->
+
 <div th:replace="~{fragments/game_fragments :: modals}"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
@@ -62,8 +62,11 @@
     window.BLACK_PLAYER = /*[[${game.blackPlayer != null ? game.blackPlayer.username : ''}]]*/ '';
 </script>
 
+<script th:src="@{/js/game-constants.js}"></script>
+<script th:src="@{/js/game-ui.js}"></script>
+<script th:src="@{/js/game-logic.js}"></script>
+<script th:src="@{/js/game-actions.js}"></script>
 <script th:src="@{/js/socket.js}"></script>
-<script th:src="@{/js/game.js}"></script>
 
 </body>
 </html>

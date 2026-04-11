@@ -24,8 +24,8 @@ body {
     background-color: var(--card-bg);
     padding: 2rem;
     border-radius: 8px;
-    border: 1px solid var(--border-color); /* Thêm viền phẳng */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Đổ bóng tĩnh, không phát sáng */
+    border: 1px solid var(--border-color); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
     width: 100%;
     max-width: 400px;
 }
@@ -94,13 +94,11 @@ input {
 .eye-btn:hover { color: var(--text-color); }
 .eye-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-/* =========================================
-   GIAO DIỆN HỒ SƠ
-========================================= */
+
 .profile-container {
     max-width: 850px !important;
     padding: 2.5rem !important;
-    height: auto !important; /* Allow it to grow */
+    height: auto !important; 
     min-height: auto !important;
 }
 

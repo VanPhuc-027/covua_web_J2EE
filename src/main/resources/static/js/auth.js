@@ -45,10 +45,10 @@ function showAuthError(message) {
     if (errorDiv && errorMsg) {
         errorMsg.textContent = message;
         errorDiv.style.display = 'block';
-        // Cuộn lên đầu để người dùng thấy lỗi
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-        alert(message); // Fallback
+        alert(message); 
     }
 }
 

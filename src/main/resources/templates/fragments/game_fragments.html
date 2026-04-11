@@ -7,7 +7,7 @@
 
 <body>
 
-    <!-- BÀN CỜ -->
+
     <div th:fragment="board" class="board-container" style="position: relative;">
         <div th:if="${game.status.name() == 'WAITING'}" class="waiting-overlay">
             <h2
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <!-- SIDEBAR (THÔNG TIN, LỊCH SỬ, CHAT) -->
+
     <aside th:fragment="sidebar" class="right-panel" style="display: flex; flex-direction: column;">
         <div class="game-info" style="flex-shrink: 0;">
             <div class="player opponent">
@@ -82,7 +82,7 @@
         </div>
     </aside>
 
-    <!-- CÁC MODALS (THÔNG BÁO, PHONG QUÂN) -->
+
     <div th:fragment="modals">
         <div class="game-modal-overlay" id="game-modal-overlay"
             style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;">

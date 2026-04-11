@@ -61,7 +61,7 @@
     border-radius: 4px;
 }
 
-/* CHAT BOX */
+
 .chat-box {
     flex: 1;
     display: flex;
@@ -175,7 +175,7 @@
     text-transform: uppercase;
 }
 
-/* MOVE HISTORY */
+
 .move-history {
     flex: 1;
     display: flex;
