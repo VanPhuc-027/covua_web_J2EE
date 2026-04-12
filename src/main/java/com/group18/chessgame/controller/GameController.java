@@ -31,7 +31,6 @@ public class GameController {
         GameResponse response = gameLogicService.makeMove(gameId, moveRequest);
 
         if (response.isSuccess()) {
-            // Push the new state directly to all clients to avoid an extra /board fetch (and DB hit).
             simpMessagingTemplate.convertAndSend("/topic/game/" + gameId, response);
         }
 
