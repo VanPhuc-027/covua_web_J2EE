@@ -134,6 +134,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.squares.forEach(square => {
         square.addEventListener("click", async () => {
+            if (window.myColor && window.currentTurn !== window.myColor) return;
+
             const row = square.dataset.row;
             const col = square.dataset.col;
 
