@@ -85,11 +85,9 @@ public class GameLogicService {
                 return new GameResponse(false, "Move leaves king in check", board);
             }
 
-            // Record notation BEFORE moving (to check if it was a capture)
             boolean isCapture = end.getPiece() != null;
             String notation = getNotation(piece, fromRow, fromCol, toRow, toCol, isCapture);
 
-            // Xử lý nhập thành
             if (piece instanceof King && Math.abs(fromCol - toCol) == 2) {
                 int rookFromCol = (toCol > fromCol) ? 7 : 0;
                 int rookToCol = (toCol > fromCol) ? 5 : 3;
@@ -99,13 +97,11 @@ public class GameLogicService {
 
             board.movePiece(start, end);
             
-            // Cập nhật En Passant Target cho lượt sau
             board.setEnPassantTarget(null);
             if (piece instanceof Pawn && Math.abs(fromRow - toRow) == 2) {
                 board.setEnPassantTarget(board.getSpot((fromRow + toRow) / 2, fromCol));
             }
 
-            // Xử lý phong quân
             if (piece instanceof Pawn && ((currentTurn == PieceColor.WHITE && toRow == 0) || (currentTurn == PieceColor.BLACK && toRow == 7))) {
                 String promo = move.getPromotion() != null ? move.getPromotion().toLowerCase() : "queen";
                 Piece newPiece = switch (promo) {
@@ -125,22 +121,17 @@ public class GameLogicService {
             entry.fen = newFen;
             entry.moveHistory.add(notation);
 
-            // Persist Move asynchronously - do NOT block the move response with a DB round-trip
             final String savedGameId = gameId;
             final String savedNotation = notation;
             final int savedOrder = entry.moveHistory.size();
             final String savedFen = newFen;
             final PieceColor savedTurn = nextTurn;
-            // Build UCI move string (e.g. "e2e4") for highlight in replay
             final String savedUci = getAlgebraic(fromRow, fromCol) + getAlgebraic(toRow, toCol);
             new Thread(() -> {
                 try {
-                    // Update main game table
                     gameRepository.updateGameState(savedGameId, savedFen, savedTurn);
                     
-                    // Save individual move history
                     Move moveEntity = new Move();
-                    // Avoid loading the entire Game entity; just set the FK via a proxy
                     Game gameRef = gameRepository.getReferenceById(savedGameId);
                     moveEntity.setGame(gameRef);
                     moveEntity.setMoveNotation(savedNotation);
@@ -148,7 +139,7 @@ public class GameLogicService {
                     moveEntity.setUciMove(savedUci);
                     moveEntity.setMoveOrder(savedOrder);
                     moveRepository.save(moveEntity);
-                } catch (Exception ex) { /* log */ }
+                } catch (Exception ex) { }
             }).start();
 
             boolean isCheck = isKingInCheck(board, nextTurn);
@@ -173,7 +164,6 @@ public class GameLogicService {
         }
     }
 
-    // Lấy nước đi hợp lệ cũng phải truyền gameId
     public List<int[]> getValidMoves(String gameId, int row, int col) {
         List<int[]> moves = new ArrayList<>();
         Optional<GameStateCache.Entry> entryOpt = gameStateCache.get(gameId)
@@ -308,10 +298,8 @@ public class GameLogicService {
             }
         }
 
-        // simulate move
         board.movePiece(start, end, false);
         boolean inCheck = isKingInCheck(board, color);
-        // undo move
         board.movePiece(end, start, false);
         end.setPiece(captured);
         if (epCapturedSpot != null) {
@@ -353,7 +341,6 @@ public class GameLogicService {
             if (gameOpt.isEmpty()) return new GameResponse(false, "Game not found", null);
             Game game = gameOpt.get();
             
-            // Không xử lý nếu game đã kết thúc
             if (game.getStatus() == GameStatus.FINISHED) {
                 return new GameResponse(false, "Game already finished", entry.board);
             }
