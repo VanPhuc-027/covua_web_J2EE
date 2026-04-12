@@ -1,0 +1,66 @@
+document.addEventListener('DOMContentLoaded', function () {
+    const registerForm = document.getElementById('registerForm');
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', function (e) {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.querySelector('input[name="email"]').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (username.length < 3) {
+                e.preventDefault();
+                showAuthError('Tên người dùng phải có ít nhất 3 ký tự!');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                e.preventDefault();
+                showAuthError('Email không đúng định dạng!');
+                return;
+            }
+
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                e.preventDefault();
+                showAuthError('Mật khẩu phải có nhất 8 ký tự, gồm ít nhất một chữ viết hoa và một chữ số!');
+                return;
+            }
+
+            if (password !== confirm) {
+                e.preventDefault();
+                showAuthError('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
+            console.log("Dữ liệu hợp lệ, đang gửi đăng ký...");
+        });
+    }
+});
+
+function showAuthError(message) {
+    const errorDiv = document.getElementById('js-error');
+    const errorMsg = document.getElementById('js-error-msg');
+    if (errorDiv && errorMsg) {
+        errorMsg.textContent = message;
+        errorDiv.style.display = 'block';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        alert(message); 
+    }
+}
+
+function togglePassword(inputId, btnElement) {
+    const input = document.getElementById(inputId);
+    const eyeOpen = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    const eyeClosed = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+    if (input.type === 'password') {
+        input.type = 'text';
+        btnElement.innerHTML = eyeOpen;
+    } else {
+        input.type = 'password';
+        btnElement.innerHTML = eyeClosed;
+    }
+}

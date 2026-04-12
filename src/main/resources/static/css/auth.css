@@ -1,0 +1,191 @@
+:root {
+    --bg-color: #1a262b;
+    --card-bg: #24343d;
+    --primary-color: #4caf50;
+    --primary-hover: #45a049;
+    --text-color: #ffffff;
+    --input-bg: #2c3e47;
+    --border-color: #3d515a;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+}
+
+.auth-container {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+    width: 100%;
+    max-width: 400px;
+}
+
+h2 { text-align: center; margin-bottom: 1.5rem; color: var(--text-color); }
+
+.form-group { margin-bottom: 1rem; }
+
+label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #ccc; }
+
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: white;
+    box-sizing: border-box;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover { background-color: var(--primary-hover); }
+
+.auth-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; }
+.auth-footer a { color: var(--primary-color); text-decoration: none; }
+
+.auth-alert-box {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    text-align: center;
+}
+
+.password-wrapper { position: relative; display: flex; align-items: center; }
+.password-wrapper input { padding-right: 40px; }
+
+.eye-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #889296;
+    transition: color 0.2s;
+    outline: none;
+}
+.eye-btn:hover { color: var(--text-color); }
+.eye-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+
+.profile-container {
+    max-width: 850px !important;
+    padding: 2.5rem !important;
+    height: auto !important; 
+    min-height: auto !important;
+}
+
+.profile-info { text-align: center; }
+
+.avatar-circle.flat-style {
+    background-color: var(--input-bg);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    width: 100px;
+    height: 100px;
+    font-size: 2.5rem;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.profile-title {
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 1.5rem;
+}
+
+.stats.flat-style {
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.15);
+    padding: 20px 0;
+    margin: 20px 0;
+    border-radius: 6px;
+}
+
+.stat-item { text-align: center; }
+.stat-item span {
+    font-size: 0.8rem;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-top: 5px;
+}
+.stat-item strong.text-primary {
+    color: var(--primary-color);
+    font-size: 1.4rem;
+    display: block;
+}
+
+.btn-logout-flat {
+    width: 200px;
+    margin: 0 auto 15px auto;
+    padding: 12px;
+    background-color: transparent;
+    border: 1px solid #f44336;
+    border-radius: 4px;
+    color: #f44336;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    display: block;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-logout-flat:hover {
+    background-color: #f44336;
+    color: #fff;
+}
+
+.link-back-flat {
+    display: block;
+    margin-top: 20px;
+    color: #889296;
+    text-decoration: none;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+
+.link-back-flat:hover { color: var(--text-color); }

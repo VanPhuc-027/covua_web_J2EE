@@ -1,0 +1,109 @@
+.chessboard {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.row {
+    display: flex;
+}
+
+.square {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.light {
+    background-color: rgba(238, 238, 210, 0.85);
+}
+
+.dark {
+    background-color: rgba(118, 150, 86, 0.85);
+}
+
+.square:hover {
+    transform: scale(1.05);
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.6);
+    z-index: 10;
+    border-radius: 6px;
+}
+
+.square img {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.6));
+}
+
+.valid-move {
+    box-shadow: inset 0 0 0 4px rgba(76, 175, 80, 0.85);
+    background-image: radial-gradient(circle at center, rgba(76, 175, 80, 0.35) 0 14px, transparent 15px);
+}
+
+.valid-capture {
+    box-shadow: inset 0 0 0 4px rgba(244, 67, 54, 0.9);
+    background-image: radial-gradient(circle at center, rgba(244, 67, 54, 0.22) 0 22px, transparent 23px);
+}
+
+.selected {
+    outline: 3px solid yellow;
+}
+
+.chessboard.flipped {
+    transform: rotate(180deg);
+}
+
+.chessboard.flipped .square img {
+    transform: rotate(180deg);
+}
+
+.waiting-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.checked-king {
+    outline: 3px solid #ff4444;
+    box-shadow: inset 0 0 25px rgba(255, 0, 0, 0.8);
+    background-color: rgba(255, 0, 0, 0.4) !important;
+    border-radius: 6px;
+    animation: pulse-check 1.5s infinite;
+}
+
+@keyframes pulse-check {
+    0% {
+        box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+
+    50% {
+        box-shadow: inset 0 0 35px rgba(255, 0, 0, 0.9);
+        outline-width: 4px;
+    }
+
+    100% {
+        box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.6);
+    }
+}

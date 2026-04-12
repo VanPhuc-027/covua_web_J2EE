@@ -1,0 +1,23 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.group18:chessgame >------------------------
+[INFO] Building chessgame 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ chessgame ---
+[INFO] Deleting C:\Users\ADMIN\IdeaProjects\covua_web_J2EE\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ chessgame ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 23 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ chessgame ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 44 source files with javac [debug parameters release 21] to target\classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.581 s
+[INFO] Finished at: 2026-03-18T17:17:57+07:00
+[INFO] ------------------------------------------------------------------------

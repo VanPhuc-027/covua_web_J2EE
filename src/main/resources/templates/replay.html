@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Xem lại ván đấu - Chess Pro</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        .replay-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .replay-btn {
+            padding: 10px 15px;
+            border: none;
+            background: var(--primary-color, #4caf50);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .replay-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .move-history-container {
+            max-height: 250px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .move-history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 14px;
+        }
+        .move-row {
+            display: flex;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .move-row > span {
+            flex: 1;
+            text-align: center;
+        }
+        .move-num {
+            color: #888;
+            flex: 0.5 !important;
+        }
+        .move-item {
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .move-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .move-item.active {
+            background: var(--primary-color, #4caf50);
+            color: white;
+            font-weight: bold;
+        }
+        /* Highlight ô vừa di chuyển */
+        .square.highlight-from {
+            background-color: rgba(255, 213, 79, 0.55) !important;
+        }
+        .square.highlight-to {
+            background-color: rgba(255, 213, 79, 0.85) !important;
+        }
+        /* Highlight ô bị ăn quân */
+        .square.highlight-capture {
+            background-color: rgba(229, 57, 53, 0.80) !important;
+            box-shadow: inset 0 0 0 3px rgba(183, 28, 28, 0.9);
+        }
+    </style>
+</head>
+<body>
+<header class="top-navbar">
+    <div class="logo">
+        <h2>♟️ Chess Pro Replay</h2>
+    </div>
+
+    <ul class="menu-items">
+        <li>
+            <a th:href="@{/profile}" style="background: none; border: none; color: inherit; font-size: inherit; cursor: pointer; text-decoration: none;">
+                🔙 Quay lại hồ sơ
+            </a>
+        </li>
+    </ul>
+
+    <div class="header-right-group">
+        <div class="user-profile" style="text-decoration: none; color: inherit; cursor: default;">
+            <div class="info">
+                <span class="name" th:text="${currentPlayer.username}">Tên người dùng</span>
+            </div>
+            <div class="avatar" style="font-size: 24px;">👤</div>
+        </div>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="board-container">
+        <div class="chessboard">
+            <div th:each="rowArray : ${board.boxes}" class="row">
+                <div th:each="spot : ${rowArray}"
+                     th:classappend="${(spot.row + spot.col) % 2 == 0 ? 'light' : 'dark'}"
+                     th:attr="data-row=${spot.row},data-col=${spot.col}"
+                     class="square">
+                    <img th:if="${spot.piece != null}"
+                         th:src="@{${spot.piece.iconPath}}"
+                         alt="chess-piece">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="right-panel">
+        <div class="game-info">
+            <div class="player opponent">
+                <div class="avatar">🤖</div>
+                <div class="details">
+                    <span class="name" th:text="${game.whitePlayer.id == currentPlayer.id ? (game.blackPlayer != null ? game.blackPlayer.username : 'Đen') : (game.whitePlayer != null ? game.whitePlayer.username : 'Trắng')}">Đối thủ</span>
+                </div>
+            </div>
+            <div class="match-status" style="padding: 15px; text-align: center; color: #ccc;">
+                <strong>Xem lại ván đấu</strong>
+                <div id="game-result" style="color: #4caf50; font-weight: bold; margin-top: 5px;" th:text="${game.result != null ? game.result : ''}">Kết quả</div>
+            </div>
+            <div class="player you">
+                <div class="avatar">👤</div>
+                <div class="details">
+                    <span class="name" th:text="${game.whitePlayer.id == currentPlayer.id ? game.whitePlayer.username : (game.blackPlayer != null ? game.blackPlayer.username : 'Bạn')}">Bạn</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="replay-controls">
+            <button type="button" class="replay-btn" id="btn-start" title="Về đầu ván">⏮</button>
+            <button type="button" class="replay-btn" id="btn-prev" title="Lùi 1 nước">◀</button>
+            <button type="button" class="replay-btn" id="btn-next" title="Tiến 1 nước">▶</button>
+            <button type="button" class="replay-btn" id="btn-end" title="Xem kết quả">⏭</button>
+        </div>
+
+        <div class="move-history" style="margin-top: 15px;">
+            <div class="history-header">Lịch sử nước đi</div>
+            <div class="move-history-container">
+                <div class="move-history-list" id="move-list">
+
+                    <div style="text-align: center; color: #888; padding: 20px;">Đang tải nước đi...</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<script th:inline="javascript">
+    const GAME_ID = /*[[${game.id}]]*/ '';
+    
+    document.addEventListener("DOMContentLoaded", async function() {
+        // Fetch nước đi từ API (trả về [{notation, fen}, ...])
+        try {
+            const res = await fetch(`/api/game/${GAME_ID}/replay-moves`);
+            const moves = await res.json();
+            initReplay(moves);
+        } catch(e) {
+            document.getElementById("move-list").innerHTML = '<div style="color: red; text-align: center;">Lỗi tải dữ liệu.</div>';
+        }
+    });
+
+    function initReplay(moves) {
+        // Xây dựng danh sách FEN: fens[0] = vị trí ban đầu, fens[i] = sau nước i
+        // Strategy: Nếu move có FEN lưu sẵn → dùng trực tiếp
+        //           Nếu không (ván cũ) → dùng chess.js với SAN đầy đủ (fallback)
+        const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+        
+        // Kiểm tra xem có move nào thiếu FEN không (ván được lưu trước khi fix)
+        const hasFen = moves.length > 0 && moves[0].fen != null;
+        
+        let fens = [INITIAL_FEN];
+        let notations = [];
+        let ucis = [null]; // ucis[0] = null (vị trí ban đầu, không có nước nào)
+
+        if (hasFen) {
+            // Dùng FEN trực tiếp từ DB - không cần chess.js
+            for (let i = 0; i < moves.length; i++) {
+                fens.push(moves[i].fen);
+                notations.push(moves[i].notation || '...');
+                ucis.push(moves[i].uciMove || null);
+            }
+        } else {
+            // Fallback: Dùng chess.js nhưng cần notation hợp lệ
+            let game = new Chess();
+            for (let i = 0; i < moves.length; i++) {
+                const notation = moves[i].notation || moves[i];
+                const result = game.move(notation, { sloppy: true });
+                if (result) {
+                    fens.push(game.fen());
+                    // build pseudo-uci from chess.js result
+                    ucis.push(result.from + result.to);
+                } else {
+                    fens.push(fens[fens.length - 1]);
+                    ucis.push(null);
+                }
+                notations.push(notation);
+            }
+        }
+
+        // Render danh sách nước đi
+        let moveRowsHtml = '';
+        for (let i = 0; i < notations.length; i++) {
+            if (i % 2 === 0) {
+                let num = Math.floor(i/2) + 1;
+                moveRowsHtml += `<div class="move-row"><span class="move-num">${num}.</span>`;
+                moveRowsHtml += `<span class="move-item" data-index="${i+1}">${notations[i]}</span>`;
+                if (i === notations.length - 1) {
+                    moveRowsHtml += `<span></span></div>`; // ô Đen trống
+                }
+            } else {
+                moveRowsHtml += `<span class="move-item" data-index="${i+1}">${notations[i]}</span></div>`;
+            }
+        }
+        
+        document.getElementById("move-list").innerHTML = moveRowsHtml;
+
+        let currentIndex = 0;
+        const maxIndex = fens.length - 1;
+
+        const btnStart = document.getElementById("btn-start");
+        const btnPrev = document.getElementById("btn-prev");
+        const btnNext = document.getElementById("btn-next");
+        const btnEnd = document.getElementById("btn-end");
+
+        function uciToSquare(uci, isFrom) {
+            // uci = "e2e4", isFrom=true → "e2", isFrom=false → "e4"
+            // trả về {row, col} theo hệ data-row/data-col (row 0 = rank 8)
+            const sq = isFrom ? uci.substring(0, 2) : uci.substring(2, 4);
+            const col = sq.charCodeAt(0) - 'a'.charCodeAt(0); // a=0 ... h=7
+            const row = 8 - parseInt(sq[1]);                   // rank8=row0 ... rank1=row7
+            return { row, col };
+        }
+
+        function highlightMove(uci, isCapture) {
+            // Xóa tất cả highlight cũ
+            document.querySelectorAll('.square.highlight-from, .square.highlight-to, .square.highlight-capture')
+                .forEach(el => el.classList.remove('highlight-from', 'highlight-to', 'highlight-capture'));
+            if (!uci) return;
+            const from = uciToSquare(uci, true);
+            const to   = uciToSquare(uci, false);
+            const fromSq = document.querySelector(`.square[data-row="${from.row}"][data-col="${from.col}"]`);
+            const toSq   = document.querySelector(`.square[data-row="${to.row}"][data-col="${to.col}"]`);
+            if (fromSq) fromSq.classList.add('highlight-from');
+            if (toSq) {
+                toSq.classList.add(isCapture ? 'highlight-capture' : 'highlight-to');
+            }
+        }
+
+        function updateBoard(index) {
+            currentIndex = index;
+            renderFen(fens[currentIndex]);
+            // Kiểm tra nước hiện tại có phải ăn quân không (notation chứa 'x')
+            const notation = currentIndex > 0 ? notations[currentIndex - 1] : null;
+            const isCapture = notation ? notation.includes('x') : false;
+            highlightMove(ucis[currentIndex], isCapture);
+            
+            // Xử lý active state của move-list
+            document.querySelectorAll(".move-item").forEach(el => el.classList.remove("active"));
+            if (currentIndex > 0) {
+                const activeMove = document.querySelector(`.move-item[data-index="${currentIndex}"]`);
+                if (activeMove) {
+                    activeMove.classList.add("active");
+                    activeMove.scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            btnPrev.disabled = currentIndex <= 0;
+            btnStart.disabled = currentIndex <= 0;
+            btnNext.disabled = currentIndex >= maxIndex;
+            btnEnd.disabled = currentIndex >= maxIndex;
+        }
+
+        btnStart.onclick = (e) => { e.preventDefault(); updateBoard(0); };
+        btnPrev.onclick = (e) => { e.preventDefault(); if(currentIndex > 0) updateBoard(currentIndex - 1); };
+        btnNext.onclick = (e) => { e.preventDefault(); if(currentIndex < maxIndex) updateBoard(currentIndex + 1); };
+        btnEnd.onclick = (e) => { e.preventDefault(); updateBoard(maxIndex); };
+
+        document.querySelectorAll(".move-item").forEach(obj => {
+            obj.onclick = (e) => {
+                e.preventDefault();
+                const targetIndex = parseInt(e.target.getAttribute("data-index"));
+                updateBoard(targetIndex);
+            }
+        });
+
+        // Initialize board
+        updateBoard(0);
+    }
+
+    function renderFen(fen) {
+        const rows = fen.split(' ')[0].split('/');
+        const pieceMap = { 'p': 'pawn', 'r': 'rook', 'n': 'knight', 'b': 'bishop', 'q': 'queen', 'k': 'king' };
+        
+        for (let r = 0; r < 8; r++) {
+            let c = 0;
+            for (let char of rows[r]) {
+                if (!isNaN(char)) {
+                    // Xóa quân cờ khỏi các ô trống
+                    let emptyCount = parseInt(char);
+                    for(let i = 0; i < emptyCount; i++) {
+                        let sq = document.querySelector(`.square[data-row="${r}"][data-col="${c}"]`);
+                        if(sq) sq.innerHTML = '';
+                        c++;
+                    }
+                } else {
+                    const color = char === char.toUpperCase() ? 'white' : 'black';
+                    const type = pieceMap[char.toLowerCase()];
+                    const src = `/img/${color}_${type}.png`;
+
+                    let sq = document.querySelector(`.square[data-row="${r}"][data-col="${c}"]`);
+                    if(sq) {
+                        // Luôn xóa nội dung cũ rồi set lại để đảm bảo capture được hiển thị đúng
+                        sq.innerHTML = '';
+                        let img = document.createElement('img');
+                        img.setAttribute('src', src);
+                        img.setAttribute('alt', color + ' ' + type);
+                        sq.appendChild(img);
+                    }
+                    c++;
+                }
+            }
+        }
+    }
+</script>
+</body>
+</html>
