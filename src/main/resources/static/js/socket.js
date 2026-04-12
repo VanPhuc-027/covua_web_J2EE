@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.stompClient.connect({}, function (frame) {
         window.stompClient.subscribe('/topic/game/' + gameId, function (message) {
-            // Server can send either a plain string event or a JSON payload (GameResponse).
+
             if (message.body === "PLAYER_JOINED") {
                 window.location.reload();
                 return;
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (typeof window.renderBoardFromResponse === "function") {
                         window.renderBoardFromResponse(payload.board);
                     } else if (typeof window.fetchAndRenderBoard === 'function') {
-                        // Fallback for older pages.
+
                         window.fetchAndRenderBoard();
                     }
                     if (typeof window.handleCheckStatus === "function") {
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
             } catch (e) {
-                // Not JSON, ignore.
+
             }
         });
         window.stompClient.subscribe('/topic/game/' + window.CURRENT_GAME_ID + '/chat', function (message) {

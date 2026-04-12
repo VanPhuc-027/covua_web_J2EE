@@ -99,6 +99,12 @@ public class GameLogicService {
 
             board.movePiece(start, end);
             
+            // Cập nhật En Passant Target cho lượt sau
+            board.setEnPassantTarget(null);
+            if (piece instanceof Pawn && Math.abs(fromRow - toRow) == 2) {
+                board.setEnPassantTarget(board.getSpot((fromRow + toRow) / 2, fromCol));
+            }
+
             // Xử lý phong quân
             if (piece instanceof Pawn && ((currentTurn == PieceColor.WHITE && toRow == 0) || (currentTurn == PieceColor.BLACK && toRow == 7))) {
                 String promo = move.getPromotion() != null ? move.getPromotion().toLowerCase() : "queen";
@@ -113,7 +119,7 @@ public class GameLogicService {
             }
 
             PieceColor nextTurn = (currentTurn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
-            String newFen = FenUtils.boardToFen(board);
+            String newFen = FenUtils.boardToFen(board, nextTurn);
 
             entry.currentTurn = nextTurn;
             entry.fen = newFen;
@@ -411,12 +417,7 @@ public class GameLogicService {
         }
 
         String fenForApi = entry.fen;
-        if(!fenForApi.contains("")) {
-            String turnStr = (entry.currentTurn == PieceColor.WHITE) ? "w" : "b";
-            fenForApi += " " + turnStr + " KQkq - 0 1";
-        }
-
-        String bestMoveUci = stockfishApiService.getBestMoveFromApi(entry.fen, depth);
+        String bestMoveUci = stockfishApiService.getBestMoveFromApi(fenForApi, depth);
         if (bestMoveUci == null) {
             return new GameResponse(false, "Bot đang lag, không nghĩ ra nước đi", null);
         }

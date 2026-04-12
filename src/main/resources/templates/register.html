@@ -9,7 +9,12 @@
 <div class="auth-container">
     <h2>Đăng Ký</h2>
 
-    <div th:if="${error}" style="color: #f44336; background: rgba(244, 67, 54, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(244, 67, 54, 0.3); text-align: center;">
+
+    <div id="js-error" class="auth-alert-box" style="display: none;">
+        <span id="js-error-msg"></span>
+    </div>
+
+    <div th:if="${error}" class="auth-alert-box">
         <span th:text="${error}"></span>
     </div>
 

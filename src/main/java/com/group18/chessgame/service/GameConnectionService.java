@@ -6,11 +6,9 @@ import com.group18.chessgame.model.Player;
 import com.group18.chessgame.repository.GameRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
@@ -22,7 +20,6 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class GameConnectionService {
 
-    private final GameLogicService gameLogicService;
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -37,7 +34,7 @@ public class GameConnectionService {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         String dest = accessor.getDestination();
         String sessionId = accessor.getSessionId();
-        
+
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         Player currentPlayer = sessionAttributes != null ? (Player) sessionAttributes.get("currentPlayer") : null;
 
@@ -45,7 +42,7 @@ public class GameConnectionService {
             String gameId = dest.substring("/topic/game/".length());
             sessionToGame.put(sessionId, gameId);
             sessionToUser.put(sessionId, currentPlayer.getUsername());
-            
+
             // Cancel any pending disconnect task
             String taskKey = gameId + "_" + currentPlayer.getUsername();
             ScheduledFuture<?> pendingTask = disconnectTasks.remove(taskKey);
@@ -74,11 +71,13 @@ public class GameConnectionService {
 
     private void handleAbandonGame(String gameId, String abandoningUsername) {
         Optional<Game> gameOpt = gameRepository.findById(gameId);
-        if (gameOpt.isEmpty()) return;
+        if (gameOpt.isEmpty())
+            return;
         Game game = gameOpt.get();
 
         // Nếu game đã kết thúc rồi thì không xử lý nữa
-        if (game.getStatus() == com.group18.chessgame.enums.GameStatus.FINISHED) return;
+        if (game.getStatus() == com.group18.chessgame.enums.GameStatus.FINISHED)
+            return;
 
         String abandonedPlayerColor = null;
         if (game.getWhitePlayer() != null && game.getWhitePlayer().getUsername().equals(abandoningUsername)) {
@@ -93,8 +92,9 @@ public class GameConnectionService {
             response.setAction("RESIGN");
             response.setWinner(winner);
             response.setActionPlayer(abandonedPlayerColor);
-            response.setMessage("Người chơi " + abandoningUsername + " ngắt kết nối quá 30s. " + (winner.equals("WHITE") ? "Trắng" : "Đen") + " thắng!");
-            
+            response.setMessage("Người chơi " + abandoningUsername + " ngắt kết nối quá 30s. "
+                    + (winner.equals("WHITE") ? "Trắng" : "Đen") + " thắng!");
+
             messagingTemplate.convertAndSend("/topic/game/" + gameId, response);
         }
     }

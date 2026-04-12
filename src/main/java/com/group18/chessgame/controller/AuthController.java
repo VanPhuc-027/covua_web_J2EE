@@ -3,7 +3,6 @@ package com.group18.chessgame.controller;
 import com.group18.chessgame.dto.LoginDTO;
 import com.group18.chessgame.dto.RegisterDTO;
 import com.group18.chessgame.model.Player;
-import com.group18.chessgame.service.GameLobbyService;
 import com.group18.chessgame.service.PlayerService;
 import com.group18.chessgame.enums.RegisterResult;
 import jakarta.servlet.http.HttpSession;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final PlayerService playerService;
-    private final GameLobbyService gameLobbyService;
 
     @GetMapping("/register")
     public String showRegisterPage(Model model) {
@@ -27,23 +25,36 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String handleRegister(@Valid @ModelAttribute RegisterDTO registerDTO, BindingResult bindingResult, Model model) {
-        if (bindingResult.hasErrors()) return "register";
+    public String handleRegister(@Valid @ModelAttribute RegisterDTO registerDTO, BindingResult bindingResult,
+            Model model) {
+        if (bindingResult.hasErrors())
+            return "register";
 
         RegisterResult result = playerService.register(registerDTO);
         switch (result) {
-            case USERNAME_TAKEN -> { model.addAttribute("error",
-                    "Username đã được sử dụng!"); return "register"; }
-            case EMAIL_TAKEN -> { model.addAttribute("error",
-                    "Email đã được sử dụng!"); return "register"; }
-            case PASSWORD_MISMATCH -> { model.addAttribute("error",
-                    "Mật khẩu xác nhận không khớp!"); return "register"; }
+            case USERNAME_TAKEN -> {
+                model.addAttribute("error",
+                        "Username đã được sử dụng!");
+                return "register";
+            }
+            case EMAIL_TAKEN -> {
+                model.addAttribute("error",
+                        "Email đã được sử dụng!");
+                return "register";
+            }
+            case PASSWORD_MISMATCH -> {
+                model.addAttribute("error",
+                        "Mật khẩu xác nhận không khớp!");
+                return "register";
+            }
             case PASSWORD_INVALID -> {
                 model.addAttribute("error", "Mật khẩu phải có ít nhất 8 ký tự, " +
                         "gồm ít nhất một chữ viết hoa và một chữ số!");
                 return "register";
             }
-            case SUCCESS -> { return "redirect:/login?registered=true"; }
+            case SUCCESS -> {
+                return "redirect:/login?registered=true";
+            }
         }
         return "register";
     }
@@ -52,13 +63,16 @@ public class AuthController {
     public String showLoginPage(Model model, @RequestParam(required = false) String registered, HttpSession session) {
         session.setAttribute("init_session", true);
         model.addAttribute("loginDTO", new LoginDTO());
-        if (registered != null) model.addAttribute("message", "Đăng ký thành công! Vui lòng đăng nhập.");
+        if (registered != null)
+            model.addAttribute("message", "Đăng ký thành công! Vui lòng đăng nhập.");
         return "login";
     }
 
     @PostMapping("/login")
-    public String handleLogin(@Valid @ModelAttribute LoginDTO loginDTO, BindingResult bindingResult, Model model, HttpSession session) {
-        if (bindingResult.hasErrors()) return "login";
+    public String handleLogin(@Valid @ModelAttribute LoginDTO loginDTO, BindingResult bindingResult, Model model,
+            HttpSession session) {
+        if (bindingResult.hasErrors())
+            return "login";
 
         Player player = playerService.login(loginDTO);
         if (player == null) {
