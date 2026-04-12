@@ -2,24 +2,6 @@
 
 > Ứng dụng cờ vua trực tuyến xây dựng bằng **Spring Boot 4**, hỗ trợ chơi real-time giữa hai người chơi hoặc đấu với AI (Stockfish), kèm hệ thống quản lý người dùng và replay ván cờ.
 
----
-
-## 📋 Mục lục
-
-- [Giới thiệu](#giới-thiệu)
-- [Tính năng](#tính-năng)
-- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
-- [Hướng dẫn cài đặt](#hướng-dẫn-cài-đặt)
-- [Cấu hình môi trường](#cấu-hình-môi-trường)
-- [Chạy bằng Docker](#chạy-bằng-docker)
-- [Cấu trúc dự án](#cấu-trúc-dự-án)
-- [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
-- [API Endpoints](#api-endpoints)
-- [Cơ sở dữ liệu](#cơ-sở-dữ-liệu)
-- [Tác giả](#tác-giả)
-
----
 
 ## 🎯 Giới thiệu
 
@@ -359,9 +341,5 @@ Dự án bao gồm:
 ## 👥 Tác giả
 
 Dự án được phát triển bởi **Group 18** — môn học J2EE / Lập trình Web với Java.
-
----
-
-## 📄 Giấy phép
 
 Dự án được phát triển phục vụ mục đích học tập.
