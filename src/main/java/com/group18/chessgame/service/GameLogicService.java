@@ -131,6 +131,8 @@ public class GameLogicService {
             final int savedOrder = entry.moveHistory.size();
             final String savedFen = newFen;
             final PieceColor savedTurn = nextTurn;
+            // Build UCI move string (e.g. "e2e4") for highlight in replay
+            final String savedUci = getAlgebraic(fromRow, fromCol) + getAlgebraic(toRow, toCol);
             new Thread(() -> {
                 try {
                     // Update main game table
@@ -142,6 +144,8 @@ public class GameLogicService {
                     Game gameRef = gameRepository.getReferenceById(savedGameId);
                     moveEntity.setGame(gameRef);
                     moveEntity.setMoveNotation(savedNotation);
+                    moveEntity.setFenAfterMove(savedFen);
+                    moveEntity.setUciMove(savedUci);
                     moveEntity.setMoveOrder(savedOrder);
                     moveRepository.save(moveEntity);
                 } catch (Exception ex) { /* log */ }

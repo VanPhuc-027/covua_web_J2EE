@@ -2,6 +2,7 @@ package com.group18.chessgame.controller;
 
 import com.group18.chessgame.dto.GameResponse;
 import com.group18.chessgame.dto.MoveRequest;
+import com.group18.chessgame.dto.ReplayMoveDTO;
 import com.group18.chessgame.model.Board;
 import com.group18.chessgame.service.GameLogicService;
 import lombok.RequiredArgsConstructor;
@@ -88,8 +89,13 @@ public class GameController {
 
     @GetMapping("/{gameId}/replay-moves")
     @ResponseBody
-    public List<String> getReplayMoves(@PathVariable String gameId) {
+    public List<ReplayMoveDTO> getReplayMoves(@PathVariable String gameId) {
         List<Move> moves = moveRepository.findByGameIdOrderByMoveOrderAsc(gameId);
-        return moves.stream().map(Move::getMoveNotation).collect(Collectors.toList());
+        return moves.stream()
+                .map(m -> new ReplayMoveDTO(
+                        m.getMoveNotation(),
+                        m.getFenAfterMove(),
+                        m.getUciMove()))
+                .collect(Collectors.toList());
     }
 }

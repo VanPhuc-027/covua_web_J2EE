@@ -23,6 +23,8 @@ public class Move {
     private Player player;
 
     private String moveNotation;
+    private String fenAfterMove;
+    private String uciMove;   // định dạng "e2e4" – lưu ô xuất phát + ô đích
     private int moveOrder;
     private LocalDateTime timestamp = LocalDateTime.now();
 }
